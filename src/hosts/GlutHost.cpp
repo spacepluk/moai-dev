@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <aku/AKU.h>
 #include <lua-headers/moai_lua.h>
 #include "GlutHost.h"
@@ -13,12 +14,8 @@
 	#include <aku/AKU-debugger.h>
 #endif
 
-#ifdef GLUTHOST_USE_FMOD_DESIGNER
-	#include <aku/AKU-fmod-designer.h>
-#endif
-
-#ifdef GLUTHOST_USE_FMOD_EX
-	#include <aku/AKU-fmod-ex.h>
+#ifdef GLUTHOST_USE_FMOD
+	#include <aku/AKU-fmod.h>
 #endif
 
 #ifdef GLUTHOST_USE_LUAEXT
@@ -68,12 +65,33 @@ namespace GlutInputDeviceSensorID {
 
 static bool sHasWindow = false;
 static bool sExitFullscreen = false;
-static bool sDynamicallyReevaluatsLuaFiles = false;
+static bool sDynamicallyReevaluateLuaFiles = false;
 
 static int sWinX;
 static int sWinY;
 static int sWinWidth;
 static int sWinHeight;
+static int sModifiers;
+
+//================================================================//
+// helper functions
+//================================================================//
+
+//----------------------------------------------------------------//
+static void _updateModifiers () {
+	int newModifiers = glutGetModifiers ();
+	int changedModifiers = newModifiers ^ sModifiers;
+	if ( changedModifiers & GLUT_ACTIVE_SHIFT ) {
+		AKUEnqueueKeyboardShiftEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, (newModifiers & GLUT_ACTIVE_SHIFT) != 0 );
+	}
+	if ( changedModifiers & GLUT_ACTIVE_CTRL ) {
+		AKUEnqueueKeyboardControlEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, (newModifiers & GLUT_ACTIVE_CTRL) != 0 );
+	}
+	if ( changedModifiers & GLUT_ACTIVE_ALT ) {
+		AKUEnqueueKeyboardAltEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, (newModifiers & GLUT_ACTIVE_ALT) != 0 );
+	}
+	sModifiers = newModifiers;
+}
 
 //================================================================//
 // glut callbacks
@@ -83,6 +101,8 @@ static int sWinHeight;
 static void _onKeyDown ( unsigned char key, int x, int y ) {
 	( void )x;
 	( void )y;
+
+	_updateModifiers ();
 	
 	AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key, true );
 }
@@ -91,6 +111,8 @@ static void _onKeyDown ( unsigned char key, int x, int y ) {
 static void _onKeyUp ( unsigned char key, int x, int y ) {
 	( void )x;
 	( void )y;
+
+	_updateModifiers ();
 	
 	AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key, false );
 }
@@ -100,6 +122,8 @@ static void _onSpecialFunc ( int key, int x, int y ) {
 	( void )x;
 	( void )y;
 	
+	_updateModifiers ();
+
 	if ( key == GLUT_KEY_F1 ) {
 	
 		static bool toggle = true;
@@ -123,6 +147,8 @@ static void _onSpecialFunc ( int key, int x, int y ) {
 static void _onMouseButton ( int button, int state, int x, int y ) {
 	( void )x;
 	( void )y;
+
+	_updateModifiers ();
 	
 	switch ( button ) {
 		case GLUT_LEFT_BUTTON:
@@ -169,6 +195,7 @@ static void _onReshape( int w, int h ) {
 
 	glutReshapeWindow ( w, h );
 	AKUSetScreenSize ( w, h );
+	AKUSetViewSize ( w, h );
 }
 
 //----------------------------------------------------------------//
@@ -184,11 +211,11 @@ static void _onTimer ( int millisec ) {
 	
 	AKUUpdate ();
 	
-	#ifdef GLUTHOST_USE_FMOD_EX
-		AKUFmodExUpdate ();
+	#ifdef AKUGLUT_USE_FMOD
+		AKUFmodUpdate ();
 	#endif
 	
-	if ( sDynamicallyReevaluatsLuaFiles ) {		
+	if ( sDynamicallyReevaluateLuaFiles ) {		
 		#ifdef _WIN32
 			winhostext_Query ();
 		#elif __APPLE__
@@ -291,7 +318,7 @@ static void _cleanup () {
 	
 	AKUFinalize ();
 	
-	if ( sDynamicallyReevaluatsLuaFiles ) {
+	if ( sDynamicallyReevaluateLuaFiles ) {
 		#ifdef _WIN32
 			winhostext_CleanUp ();
 		#elif __APPLE__
@@ -311,23 +338,29 @@ int GlutHost ( int argc, char** argv ) {
 
 	GlutRefreshContext ();
 
-	int i = 1;
-	
-	if ( argc > 2 && argv [ i ][ 0 ] == '-' && argv [ i ][ 1 ] == 'e' ) {
-		sDynamicallyReevaluatsLuaFiles = true;
-		i++;
-	}
-	
-	for ( ; i < argc; ++i ) {
-		AKURunScript ( argv [ i ]);
+	char* lastScript = NULL;
+
+	for ( int i = 1; i < argc; ++i ) {
+		char* arg = argv [ i ];
+		if ( strcmp( arg, "-e" ) == 0 ) {
+			sDynamicallyReevaluateLuaFiles = true;
+		}
+		else if ( strcmp( arg, "-s" ) == 0 && ++i < argc ) {
+			char* script = argv [ i ];
+			AKURunString ( script );
+		}
+		else {
+			AKURunScript ( arg );
+			lastScript = arg;
+		}
 	}
 	
 	//assuming that the last script is the entry point we watch for that directory and its subdirectories
-	if ( sDynamicallyReevaluatsLuaFiles ) {
+	if ( lastScript && sDynamicallyReevaluateLuaFiles ) {
 		#ifdef _WIN32
-			winhostext_WatchFolder ( argv [ argc - 1 ]);
+			winhostext_WatchFolder ( lastScript );
 		#elif __APPLE__
-			FWWatchFolder( argv [ argc - 1 ] );
+			FWWatchFolder( lastScript );
 		#endif
 	}
 	
@@ -338,21 +371,15 @@ int GlutHost ( int argc, char** argv ) {
 	return 0;
 }
 
-//----------------------------------------------------------------//
 void GlutRefreshContext () {
-
 	AKUContextID context = AKUGetContext ();
 	if ( context ) {
 		AKUDeleteContext ( context );
 	}
 	AKUCreateContext ();
 
-	#ifdef GLUTHOST_USE_FMOD_DESIGNER
-		AKUFmodDesignerInit ();
-	#endif
-
-	#ifdef GLUTHOST_USE_FMOD_EX
-		AKUFmodExInit ();
+	#ifdef GLUTHOST_USE_FMOD
+		AKUFmodLoad ();
 	#endif
 	
 	#ifdef GLUTHOST_USE_LUAEXT

@@ -88,18 +88,18 @@ int MOAIFont::_load ( lua_State* L ) {
 
 //----------------------------------------------------------------//
 /**	@name	loadFromBMFont
- @text	Sets the filename of the font for use when loading a BMFont.
+	@text	Sets the filename of the font for use when loading a BMFont.
  
- @in		MOAIFont self
- @in		string filename			The path to the BMFont file to load.
- @out	nil
- */
+	@in		MOAIFont self
+	@in		string filename			The path to the BMFont file to load.
+	@out	nil
+*/
 int	MOAIFont::_loadFromBMFont ( lua_State* L ) {
 	MOAI_LUA_SETUP ( MOAIFont, "US" )
 	
 	cc8* filename	= state.GetValue < cc8* >( 2, "" );
-	
 	self->InitWithBMFont ( filename );
+	return 0;
 }
 
 //----------------------------------------------------------------//
@@ -428,6 +428,7 @@ bool MOAIFont::IsControl ( u32 c ) {
 
 	if ( !c ) return true;
 	if ( c == '\t' ) return true;
+	if ( c == '\r' ) return true;
 	if ( c == '\n' ) return true;
 	
 	return false;

@@ -15,6 +15,27 @@ class MOAIShader;
 class MOAISurfaceSampler2D;
 
 //================================================================//
+// MOAIDeckGfxState
+//================================================================//
+class MOAIDeckGfxState {
+private:
+
+	MOAIGfxState*	mShader;
+	MOAIGfxState*	mTexture;
+
+public:
+
+	GET ( MOAIGfxState*, Shader, mShader )
+	GET ( MOAIGfxState*, Texture, mTexture )
+
+	//----------------------------------------------------------------//
+				MOAIDeckGfxState	();
+	void		Reset				();
+	void		SetShader			( MOAIGfxState* shader );
+	void		SetTexture			( MOAIGfxState* texture );
+};
+
+//================================================================//
 // MOAIDeck
 //================================================================//
 /**	@name	MOAIDeck
@@ -28,14 +49,19 @@ protected:
 		NO_CONTENT = 0xffffffff,
 	};
 
-	// TODO: refactor; not all decks need this (or will be limited to this)
-	MOAILuaSharedPtr < MOAIShader > mShader;
+	MOAILuaSharedPtr < MOAIBoundsDeck > mBoundsDeck; // bounds override
+
+	// TODO: refactor; not all decks need thse (or will be limited to these)
+	MOAILuaSharedPtr < MOAIGfxState > mShader;
 	MOAILuaSharedPtr < MOAIGfxState > mTexture;
+	
 	u32 mContentMask;
-
-	MOAILuaSharedPtr < MOAIBoundsDeck > mBoundsDeck;
-
 	SET ( u32, ContentMask, mContentMask )
+
+	u32 mDefaultShaderID;
+
+	USBox mMaxBounds;
+	bool mBoundsDirty;
 
 	//----------------------------------------------------------------//
 	static int				_setBoundsDeck			( lua_State* L );
@@ -43,8 +69,10 @@ protected:
 	static int				_setTexture				( lua_State* L );
 
 	//----------------------------------------------------------------//
+	virtual USBox			ComputeMaxBounds		() = 0;
 	virtual void			DrawIndex				( u32 idx, float xOff, float yOff, float zOff, float xScl, float yScl, float zScl );
-	virtual USBox			GetBounds				( u32 idx ) = 0;
+	virtual USBox			GetItemBounds			( u32 idx ) = 0;
+	void					SetBoundsDirty			();
 
 public:
 	
@@ -54,11 +82,9 @@ public:
 	virtual bool			Contains				( u32 idx, MOAIDeckRemapper* remapper, const USVec2D& vec );
 	void					Draw					( u32 idx, MOAIDeckRemapper* remapper );
 	void					Draw					( u32 idx, MOAIDeckRemapper* remapper, float xOff, float yOff, float zOff, float xScl, float yScl, float zScl );
-	virtual USBox			GetBounds				() = 0;
+	USBox					GetBounds				();
 	USBox					GetBounds				( u32 idx, MOAIDeckRemapper* remapper );
-	MOAIGfxState*			GetShader				();
-	virtual MOAIGfxState*	GetShaderDefault		();
-	MOAIGfxState*			GetTexture				();
+	virtual void			GetGfxState				( MOAIDeckGfxState& gfxState );
 							MOAIDeck				();
 							~MOAIDeck				();
 	void					RegisterLuaClass		( MOAILuaState& state );

@@ -28,8 +28,13 @@
 }
 
 	//----------------------------------------------------------------//
-	-( void )	moaiInit	:( UIApplication* )application;
-	-( void )	pause		:( BOOL )paused;
-	-( void )	run			:( NSString* )filename;
+    -( AKUContextID )   akuInitialized  ;
+	-( void )	moaiInit        :( UIApplication* )application;
+	-( void )	pause           :( BOOL )paused;
+	-( void )	run             :( NSString* )filename;
+
+
+    PROPERTY_READONLY ( GLint, width );
+    PROPERTY_READONLY ( GLint, height );
 	
 @end

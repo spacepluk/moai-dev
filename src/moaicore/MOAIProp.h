@@ -100,6 +100,7 @@ private:
 	static int		_getGrid			( lua_State* L );
 	static int		_getIndex			( lua_State* L );
 	static int		_getPriority		( lua_State* L );
+	static int		_getWorldBounds		( lua_State* L );
 	static int		_inside				( lua_State* L );
 	static int		_setBillboard		( lua_State* L );
 	static int		_setBlendMode		( lua_State* L );
@@ -211,10 +212,10 @@ public:
 	GET ( USVec3D, BoundsMin, mBounds.mMin )
 
 	//----------------------------------------------------------------//
+	void				AddToSortBuffer			( MOAIPartitionResultBuffer& buffer, u32 key = 0 );
 	bool				ApplyAttrOp				( u32 attrID, MOAIAttrOp& attrOp, u32 op );
 	virtual void		Draw					( int subPrimID );
 	virtual void		DrawDebug				( int subPrimID );
-	virtual void		ExpandForSort			( MOAIPartitionResultBuffer& buffer );
 	virtual void		GatherSurfaces			( MOAISurfaceSampler2D& sampler );
 	MOAIPartition*		GetPartitionTrait		();
 	bool				GetCellRect				( USRect* cellRect, USRect* paddedRect = 0 );

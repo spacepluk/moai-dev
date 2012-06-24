@@ -391,6 +391,30 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveBase.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveBase.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveQuat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveQuat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveVec.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIAnimCurveVec.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\moaicore\MOAIEaseDriver.cpp"
 				>
 			</File>
@@ -1415,6 +1439,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\moaicore\MOAIGridDeck2D.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIGridDeck2D.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\moaicore\MOAIMesh.cpp"
 				>
 			</File>
@@ -1884,6 +1916,58 @@
 			</File>
 			<File
 				RelativePath="..\..\src\moaicore\MOAIFooMgr.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="stream"
+			>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIDataBufferStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIDataBufferStream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIFileStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIFileStream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIMemStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIMemStream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStreamReader.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStreamReader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStreamWriter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\moaicore\MOAIStreamWriter.h"
 				>
 			</File>
 		</Filter>

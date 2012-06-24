@@ -439,7 +439,15 @@ void MOAIGfxDevice::DetectContext () {
 	#endif
 	
 	int maxTextureUnits;
-	glGetIntegerv ( GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits );
+	if ( this->mMajorVersion == 1 ) {
+		#if USE_OPENGLES1
+			glGetIntegerv ( GL_MAX_TEXTURE_UNITS, &maxTextureUnits );
+		#endif
+	}
+	else {
+		glGetIntegerv ( GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits );
+	}
+
 	this->mTextureUnits.Init ( maxTextureUnits );
 	this->mTextureUnits.Fill ( 0 );
 	
@@ -720,7 +728,6 @@ MOAIGfxDevice::MOAIGfxDevice () :
 	mDefaultFrameBuffer ( 0 ),
 	mDeviceScale ( 1.0f ),
 	mHasContext ( false ),
-	mHeight ( 0 ),
 	mIsFramebufferSupported ( 0 ),
 	mIsOpenGLES ( false ),
 	mIsProgrammable ( false ),
@@ -743,9 +750,12 @@ MOAIGfxDevice::MOAIGfxDevice () :
 	mUVMtxInput ( UV_STAGE_MODEL ),
 	mUVMtxOutput ( UV_STAGE_MODEL ),
 	mVertexFormat ( 0 ),
+	mVertexFormatBuffer ( 0 ),
 	mVertexMtxInput ( VTX_STAGE_MODEL ),
 	mVertexMtxOutput ( VTX_STAGE_MODEL ),
-	mWidth ( 0 ) {
+	mWidth ( 0 ),
+	mHeight ( 0 ),
+	mLandscape ( 0 ) {
 	
 	RTTI_SINGLE ( MOAIGlobalEventSource )
 	
@@ -791,6 +801,34 @@ void MOAIGfxDevice::PushDeleter ( u32 type, GLuint id ) {
 	deleter.mResourceID = id;
 	
 	this->mDeleterStack.Push ( deleter );
+}
+
+//----------------------------------------------------------------//
+void MOAIGfxDevice::ReadFrameBuffer	( MOAIImage * img ) {
+
+	unsigned char *buffer = (unsigned char *) malloc ( this->mWidth * this->mHeight * 4 );
+
+	glReadPixels( 0, 0, this->mWidth, this->mHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer );
+
+	//image is flipped vertically, flip it back
+	int index,indexInvert;
+	for ( u32 y = 0; y < ( this->mHeight / 2 ); ++y ) {
+		for ( u32 x = 0; x < this->mWidth; ++x ) {
+			for ( u32 i = 0; i < 4; ++i ) {
+
+				index = i + ( x * 4 ) + ( y * this->mWidth * 4 );
+				indexInvert = i + ( x * 4 ) + (( this->mHeight - 1 - y ) * this->mWidth * 4 );
+
+				unsigned char temp = buffer [ indexInvert ];
+				buffer [ indexInvert ] = buffer [ index ];
+				buffer [ index ] = temp;
+			}
+		}
+	}
+
+	img->Init ( buffer, this->mWidth, this->mHeight, USColor::RGBA_8888 );
+
+	free ( buffer );
 }
 
 //----------------------------------------------------------------//
@@ -1256,14 +1294,17 @@ void MOAIGfxDevice::SetShaderPreset ( u32 preset ) {
 //----------------------------------------------------------------//
 void MOAIGfxDevice::SetSize ( u32 width, u32 height ) {
 
-	this->mWidth = width;
-	this->mHeight = height;
-	
-	MOAILuaStateHandle state = MOAILuaRuntime::Get ().State ();
-	if ( this->PushListener ( EVENT_RESIZE, state )) {
-		lua_pushnumber ( state, width );
-		lua_pushnumber ( state, height );
-		state.DebugCall ( 2, 0 );
+	if (( this->mWidth != width ) || ( this->mHeight != height )) {
+
+		this->mWidth = width;
+		this->mHeight = height;
+		
+		MOAILuaStateHandle state = MOAILuaRuntime::Get ().State ();
+		if ( this->PushListener ( EVENT_RESIZE, state )) {
+			lua_pushnumber ( state, width );
+			lua_pushnumber ( state, height );
+			state.DebugCall ( 2, 0 );
+		}
 	}
 }
 
@@ -1440,16 +1481,24 @@ void MOAIGfxDevice::SetVertexFormat () {
 		this->mVertexFormat->Unbind ();
 	}
 	this->mVertexFormat = 0;
+	this->mVertexFormatBuffer = 0;
 }
 
 //----------------------------------------------------------------//
 void MOAIGfxDevice::SetVertexFormat ( const MOAIVertexFormat& format ) {
 
-	if ( this->mVertexFormat != &format ) {
+	this->SetVertexFormat ( format, this->mBuffer );
+}
+
+//----------------------------------------------------------------//
+void MOAIGfxDevice::SetVertexFormat ( const MOAIVertexFormat& format, void* buffer ) {
+
+	if (( this->mVertexFormat != &format ) || ( this->mVertexFormatBuffer != buffer )) {
 
 		this->SetVertexFormat ();
 		this->mVertexFormat = &format;
-		this->mVertexFormat->Bind ( this->mBuffer );
+		this->mVertexFormat->Bind ( buffer );
+		this->mVertexFormatBuffer = buffer;
 	}
 }
 
@@ -1565,6 +1614,56 @@ void MOAIGfxDevice::SoftReleaseResources ( u32 age ) {
 	// Horrible to call this, but generally soft release is only used
 	// in response to a low memory warning and we want to free as soon as possible.
 	glFlush ();
+}
+
+//----------------------------------------------------------------//
+void MOAIGfxDevice::TransformAndWriteQuad ( USVec4D* vtx, USVec2D* uv ) {
+
+	if ( this->mCpuVertexTransform ) {
+		this->mCpuVertexTransformMtx.TransformQuad ( vtx );
+	}
+	
+	if ( this->mCpuUVTransform ) {
+		this->mUVTransform.TransformQuad ( uv );
+	}
+	
+	this->BeginPrim ();
+	
+		// left top
+		this->Write ( vtx [ 0 ]);
+		this->Write ( uv [ 0 ]);
+		this->WriteFinalColor4b ();
+		
+		// left bottom
+		this->Write ( vtx [ 3 ]);
+		this->Write ( uv [ 3 ]);
+		this->WriteFinalColor4b ();	
+	
+		// right bottom
+		this->Write ( vtx[ 2 ]);
+		this->Write ( uv [ 2 ]);
+		this->WriteFinalColor4b ();
+		
+	this->EndPrim ();
+	
+	this->BeginPrim ();
+	
+		// left top
+		this->Write ( vtx [ 0 ]);
+		this->Write ( uv [ 0 ]);
+		this->WriteFinalColor4b ();	
+	
+		// right bottom
+		this->Write ( vtx [ 2 ]);
+		this->Write ( uv [ 2 ]);
+		this->WriteFinalColor4b ();	
+	
+		// right top
+		this->Write ( vtx [ 1 ]);
+		this->Write ( uv [ 1 ]);
+		this->WriteFinalColor4b ();
+		
+	this->EndPrim ();
 }
 
 //----------------------------------------------------------------//
@@ -1715,122 +1814,170 @@ USRect MOAIGfxDevice::WndRectToDevice ( USRect rect ) const {
 
 	rect.Bless ();
 
-	float height = ( float )this->mHeight;
-	float xMin = rect.mXMin;
-	float yMin = height - rect.mYMax;
-	float xMax = rect.mXMax;
-	float yMax = height - rect.mYMin;
+	if ( this->mLandscape ) {
 	
-	rect.mXMin = xMin * this->mDeviceScale;
-	rect.mYMin = yMin * this->mDeviceScale;
-	rect.mXMax = xMax * this->mDeviceScale;
-	rect.mYMax = yMax * this->mDeviceScale;
+		float width = ( float )this->mWidth;
+		
+		float xMin = rect.mYMin;
+		float yMin = width - rect.mXMax;
+		float xMax = rect.mYMax;
+		float yMax = width - rect.mXMin;
+		
+		rect.mXMin = xMin;
+		rect.mYMin = yMin;
+		rect.mXMax = xMax;
+		rect.mYMax = yMax;
+	}
+	else {
 	
+		float height = ( float )this->mHeight;
+		
+		float xMin = rect.mXMin;
+		float yMin = height - rect.mYMax;
+		float xMax = rect.mXMax;
+		float yMax = height - rect.mYMin;
+		
+		rect.mXMin = xMin;
+		rect.mYMin = yMin;
+		rect.mXMax = xMax;
+		rect.mYMax = yMax;
+	}
+
+	rect.Scale ( this->mDeviceScale, this->mDeviceScale );
 	return rect;
 }
 
 //----------------------------------------------------------------//
-void MOAIGfxDevice::WriteQuad ( USVec2D* vtx, USVec2D* uv ) {
+void MOAIGfxDevice::WriteQuad ( const USVec2D* vtx, const USVec2D* uv ) {
 
-	USVec4D vtx4D [ 4 ];
+	USVec4D vtxBuffer [ 4 ];
 	
-	vtx4D [ 0 ].mX = vtx [ 0 ].mX;
-	vtx4D [ 0 ].mY = vtx [ 0 ].mY;
-	vtx4D [ 0 ].mZ = 0.0f;
-	vtx4D [ 0 ].mW = 1.0f;
+	vtxBuffer [ 0 ].mX = vtx [ 0 ].mX;
+	vtxBuffer [ 0 ].mY = vtx [ 0 ].mY;
+	vtxBuffer [ 0 ].mZ = 0.0f;
+	vtxBuffer [ 0 ].mW = 1.0f;
+	
+	vtxBuffer [ 1 ].mX = vtx [ 1 ].mX;
+	vtxBuffer [ 1 ].mY = vtx [ 1 ].mY;
+	vtxBuffer [ 1 ].mZ = 0.0f;
+	vtxBuffer [ 1 ].mW = 1.0f;
+	
+	vtxBuffer [ 2 ].mX = vtx [ 2 ].mX;
+	vtxBuffer [ 2 ].mY = vtx [ 2 ].mY;
+	vtxBuffer [ 2 ].mZ = 0.0f;
+	vtxBuffer [ 2 ].mW = 1.0f;
+	
+	vtxBuffer [ 3 ].mX = vtx [ 3 ].mX;
+	vtxBuffer [ 3 ].mY = vtx [ 3 ].mY;
+	vtxBuffer [ 3 ].mZ = 0.0f;
+	vtxBuffer [ 3 ].mW = 1.0f;
 
-	vtx4D [ 1 ].mX = vtx [ 1 ].mX;
-	vtx4D [ 1 ].mY = vtx [ 1 ].mY;
-	vtx4D [ 1 ].mZ = 0.0f;
-	vtx4D [ 1 ].mW = 1.0f;
+	USVec2D uvBuffer [ 4 ];
+	memcpy ( uvBuffer, uv, sizeof ( USVec2D ) * 4 );
 	
-	vtx4D [ 2 ].mX = vtx [ 2 ].mX;
-	vtx4D [ 2 ].mY = vtx [ 2 ].mY;
-	vtx4D [ 2 ].mZ = 0.0f;
-	vtx4D [ 2 ].mW = 1.0f;
-	
-	vtx4D [ 3 ].mX = vtx [ 3 ].mX;
-	vtx4D [ 3 ].mY = vtx [ 3 ].mY;
-	vtx4D [ 3 ].mZ = 0.0f;
-	vtx4D [ 3 ].mW = 1.0f;
-
-	this->WriteQuad ( vtx4D, uv );
+	this->TransformAndWriteQuad ( vtxBuffer, uvBuffer );
 }
 
 //----------------------------------------------------------------//
-void MOAIGfxDevice::WriteQuad ( USVec3D* vtx, USVec2D* uv ) {
+void MOAIGfxDevice::WriteQuad ( const USVec2D* vtx, const USVec2D* uv, float xOff, float yOff, float zOff ) {
 
-	USVec4D vtx4D [ 4 ];
+	USVec4D vtxBuffer [ 4 ];
 	
-	vtx4D [ 0 ].mX = vtx [ 0 ].mX;
-	vtx4D [ 0 ].mY = vtx [ 0 ].mY;
-	vtx4D [ 0 ].mZ = vtx [ 0 ].mZ;
-	vtx4D [ 0 ].mW = 1.0f;
-
-	vtx4D [ 1 ].mX = vtx [ 1 ].mX;
-	vtx4D [ 1 ].mY = vtx [ 1 ].mY;
-	vtx4D [ 1 ].mZ = vtx [ 1 ].mZ;
-	vtx4D [ 1 ].mW = 1.0f;
+	vtxBuffer [ 0 ].mX = vtx [ 0 ].mX + xOff;
+	vtxBuffer [ 0 ].mY = vtx [ 0 ].mY + yOff;
+	vtxBuffer [ 0 ].mZ = zOff;
+	vtxBuffer [ 0 ].mW = 1.0f;
 	
-	vtx4D [ 2 ].mX = vtx [ 2 ].mX;
-	vtx4D [ 2 ].mY = vtx [ 2 ].mY;
-	vtx4D [ 2 ].mZ = vtx [ 2 ].mZ;
-	vtx4D [ 2 ].mW = 1.0f;
+	vtxBuffer [ 1 ].mX = vtx [ 1 ].mX + xOff;
+	vtxBuffer [ 1 ].mY = vtx [ 1 ].mY + yOff;
+	vtxBuffer [ 1 ].mZ = zOff;
+	vtxBuffer [ 1 ].mW = 1.0f;
 	
-	vtx4D [ 3 ].mX = vtx [ 3 ].mX;
-	vtx4D [ 3 ].mY = vtx [ 3 ].mY;
-	vtx4D [ 3 ].mZ = vtx [ 3 ].mZ;
-	vtx4D [ 3 ].mW = 1.0f;
-
-	this->WriteQuad ( vtx4D, uv );
+	vtxBuffer [ 2 ].mX = vtx [ 2 ].mX + xOff;
+	vtxBuffer [ 2 ].mY = vtx [ 2 ].mY + yOff;
+	vtxBuffer [ 2 ].mZ = zOff;
+	vtxBuffer [ 2 ].mW = 1.0f;
+	
+	vtxBuffer [ 3 ].mX = vtx [ 3 ].mX + xOff;
+	vtxBuffer [ 3 ].mY = vtx [ 3 ].mY + yOff;
+	vtxBuffer [ 3 ].mZ = zOff;
+	vtxBuffer [ 3 ].mW = 1.0f;
+	
+	USVec2D uvBuffer [ 4 ];
+	memcpy ( uvBuffer, uv, sizeof ( USVec2D ) * 4 );
+	
+	this->TransformAndWriteQuad ( vtxBuffer, uvBuffer );
 }
 
 //----------------------------------------------------------------//
-void MOAIGfxDevice::WriteQuad ( USVec4D* vtx, USVec2D* uv ) {
+void MOAIGfxDevice::WriteQuad ( const USVec2D* vtx, const USVec2D* uv, float xOff, float yOff, float zOff, float xScale, float yScale ) {
 
-	if ( this->mCpuVertexTransform ) {
-		this->mCpuVertexTransformMtx.TransformQuad ( vtx );
-	}
+	USVec4D vtxBuffer [ 4 ];
 	
-	if ( this->mCpuUVTransform ) {
-		this->mUVTransform.TransformQuad ( uv );
-	}
+	vtxBuffer [ 0 ].mX = ( vtx [ 0 ].mX * xScale ) + xOff;
+	vtxBuffer [ 0 ].mY = ( vtx [ 0 ].mY * yScale ) + yOff;
+	vtxBuffer [ 0 ].mZ = zOff;
+	vtxBuffer [ 0 ].mW = 1.0f;
 	
-	this->BeginPrim ();
+	vtxBuffer [ 1 ].mX = ( vtx [ 1 ].mX * xScale ) + xOff;
+	vtxBuffer [ 1 ].mY = ( vtx [ 1 ].mY * yScale ) + yOff;
+	vtxBuffer [ 1 ].mZ = zOff;
+	vtxBuffer [ 1 ].mW = 1.0f;
+
+	vtxBuffer [ 2 ].mX = ( vtx [ 2 ].mX * xScale ) + xOff;
+	vtxBuffer [ 2 ].mY = ( vtx [ 2 ].mY * yScale ) + yOff;
+	vtxBuffer [ 2 ].mZ = zOff;
+	vtxBuffer [ 2 ].mW = 1.0f;
 	
-		// left top
-		this->Write ( vtx [ 0 ]);
-		this->Write ( uv [ 0 ]);
-		this->WriteFinalColor4b ();
-		
-		// left bottom
-		this->Write ( vtx [ 3 ]);
-		this->Write ( uv [ 3 ]);
-		this->WriteFinalColor4b ();	
+	vtxBuffer [ 3 ].mX = ( vtx [ 3 ].mX * xScale ) + xOff;
+	vtxBuffer [ 3 ].mY = ( vtx [ 3 ].mY * yScale ) + yOff;
+	vtxBuffer [ 3 ].mZ = zOff;
+	vtxBuffer [ 3 ].mW = 1.0f;
 	
-		// right bottom
-		this->Write ( vtx[ 2 ]);
-		this->Write ( uv [ 2 ]);
-		this->WriteFinalColor4b ();
-		
-	this->EndPrim ();
+	USVec2D uvBuffer [ 4 ];
+	memcpy ( uvBuffer, uv, sizeof ( USVec2D ) * 4 );
 	
-	this->BeginPrim ();
+	this->TransformAndWriteQuad ( vtxBuffer, uvBuffer );
+}
+
+//----------------------------------------------------------------//
+void MOAIGfxDevice::WriteQuad ( const USVec2D* vtx, const USVec2D* uv, float xOff, float yOff, float zOff, float xScale, float yScale, float uOff, float vOff, float uScale, float vScale ) {
+
+	USVec4D vtxBuffer [ 4 ];
 	
-		// left top
-		this->Write ( vtx [ 0 ]);
-		this->Write ( uv [ 0 ]);
-		this->WriteFinalColor4b ();	
+	vtxBuffer [ 0 ].mX = ( vtx [ 0 ].mX * xScale ) + xOff;
+	vtxBuffer [ 0 ].mY = ( vtx [ 0 ].mY * yScale ) + yOff;
+	vtxBuffer [ 0 ].mZ = zOff;
+	vtxBuffer [ 0 ].mW = 1.0f;
 	
-		// right bottom
-		this->Write ( vtx [ 2 ]);
-		this->Write ( uv [ 2 ]);
-		this->WriteFinalColor4b ();	
+	vtxBuffer [ 1 ].mX = ( vtx [ 1 ].mX * xScale ) + xOff;
+	vtxBuffer [ 1 ].mY = ( vtx [ 1 ].mY * yScale ) + yOff;
+	vtxBuffer [ 1 ].mZ = zOff;
+	vtxBuffer [ 1 ].mW = 1.0f;
+
+	vtxBuffer [ 2 ].mX = ( vtx [ 2 ].mX * xScale ) + xOff;
+	vtxBuffer [ 2 ].mY = ( vtx [ 2 ].mY * yScale ) + yOff;
+	vtxBuffer [ 2 ].mZ = zOff;
+	vtxBuffer [ 2 ].mW = 1.0f;
 	
-		// right top
-		this->Write ( vtx [ 1 ]);
-		this->Write ( uv [ 1 ]);
-		this->WriteFinalColor4b ();
-		
-	this->EndPrim ();
+	vtxBuffer [ 3 ].mX = ( vtx [ 3 ].mX * xScale ) + xOff;
+	vtxBuffer [ 3 ].mY = ( vtx [ 3 ].mY * yScale ) + yOff;
+	vtxBuffer [ 3 ].mZ = zOff;
+	vtxBuffer [ 3 ].mW = 1.0f;
+	
+	USVec2D uvBuffer [ 4 ];
+	
+	uvBuffer [ 0 ].mX = ( uv [ 0 ].mX * uScale ) + uOff;
+	uvBuffer [ 0 ].mY = ( uv [ 0 ].mY * vScale ) + vOff;
+	
+	uvBuffer [ 1 ].mX = ( uv [ 1 ].mX * uScale ) + uOff;
+	uvBuffer [ 1 ].mY = ( uv [ 1 ].mY * vScale ) + vOff;
+
+	uvBuffer [ 2 ].mX = ( uv [ 2 ].mX * uScale ) + uOff;
+	uvBuffer [ 2 ].mY = ( uv [ 2 ].mY * vScale ) + vOff;
+	
+	uvBuffer [ 3 ].mX = ( uv [ 3 ].mX * uScale ) + uOff;
+	uvBuffer [ 3 ].mY = ( uv [ 3 ].mY * vScale ) + vOff;
+	
+	this->TransformAndWriteQuad ( vtxBuffer, uvBuffer );
 }

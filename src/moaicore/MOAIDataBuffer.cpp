@@ -81,8 +81,8 @@ int MOAIDataBuffer::_base64Encode ( lua_State* L ) {
 int MOAIDataBuffer::_deflate ( lua_State* L ) {
 	MOAILuaState state ( L );
 
-	int level = state.GetValue < int >( 2, USDeflater::DEFAULT_LEVEL );
-	int windowBits = state.GetValue < int >( 3, USDeflater::DEFAULT_WBITS );
+	int level = state.GetValue < int >( 2, USDeflateWriter::DEFAULT_LEVEL );
+	int windowBits = state.GetValue < int >( 3, USDeflateWriter::DEFAULT_WBITS );
 
 	if ( state.IsType ( 1, LUA_TSTRING )) {
 		return state.Deflate ( 1, level, windowBits ) ? 1 : 0;
@@ -148,7 +148,7 @@ int MOAIDataBuffer::_getString ( lua_State* L ) {
 int MOAIDataBuffer::_inflate ( lua_State* L ) {
 	MOAILuaState state ( L );
 
-	int windowBits = state.GetValue < int >( 2, USDeflater::DEFAULT_WBITS );
+	int windowBits = state.GetValue < int >( 2, USDeflateReader::DEFAULT_WBITS );
 
 	if ( state.IsType ( 1, LUA_TSTRING )) {
 		return state.Inflate ( 1, windowBits ) ? 1 : 0;
@@ -213,9 +213,8 @@ int MOAIDataBuffer::_save ( lua_State* L ) {
 	MOAI_LUA_SETUP ( MOAIDataBuffer, "US" );
 
 	cc8* filename = lua_tostring ( state, 2 );
-	bool affirm_path = state.GetValue < bool >( 3, true );
 
-	bool success = self->Save ( filename, affirm_path );
+	bool success = self->Save ( filename );
 	lua_pushboolean ( state, success );
 
 	return 1;
@@ -308,7 +307,7 @@ int MOAIDataBuffer::_toCppHeader ( lua_State* L ) {
 	if ( memStream.GetLength ()) {
 		
 		memStream.Seek ( 0, SEEK_SET );
-		STLString result = memStream.ToString ( memStream.GetLength ());
+		STLString result = memStream.ReadString ( memStream.GetLength ());
 		
 		lua_pushstring ( state, result );
 		return 1;

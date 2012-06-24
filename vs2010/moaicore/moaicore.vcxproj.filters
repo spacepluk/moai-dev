@@ -103,6 +103,9 @@
     <Filter Include="src\particles\plugins">
       <UniqueIdentifier>{66344619-ec37-4ab7-9821-f45b4c589198}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\stream">
+      <UniqueIdentifier>{17be542c-6d19-491d-8c0a-68d903d4f369}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\moaicore\MOAIAction.cpp">
@@ -599,6 +602,36 @@
     </ClCompile>
     <ClCompile Include="..\..\src\moaicore\MOAIBoundsDeck.cpp">
       <Filter>src\deck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIDataBufferStream.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIFileStream.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIMemStream.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIStream.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIStreamReader.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIStreamWriter.cpp">
+      <Filter>src\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIGridDeck2D.cpp">
+      <Filter>src\deck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIAnimCurveBase.cpp">
+      <Filter>src\anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIAnimCurveQuat.cpp">
+      <Filter>src\anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\moaicore\MOAIAnimCurveVec.cpp">
+      <Filter>src\anim</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1147,6 +1180,36 @@
     </ClInclude>
     <ClInclude Include="..\..\src\moaicore\MOAIBoundsDeck.h">
       <Filter>src\deck</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIDataBufferStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIFileStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIMemStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIStreamReader.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIStreamWriter.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIGridDeck2D.h">
+      <Filter>src\deck</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIAnimCurveBase.h">
+      <Filter>src\anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIAnimCurveQuat.h">
+      <Filter>src\anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\moaicore\MOAIAnimCurveVec.h">
+      <Filter>src\anim</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 // http://getmoai.com
 
 #include "pch.h"
+#include <float.h>
 #include <uslscore/USBox.h>
 #include <uslscore/USPrism.h>
 

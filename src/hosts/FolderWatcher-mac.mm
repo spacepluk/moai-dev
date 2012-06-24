@@ -11,6 +11,29 @@
 #import <pthread.h>
 #import <CoreServices/CoreServices.h>
 
+/*-------------------------------------------------------------------
+ * XCode 3 / LLVM <3.0 compatibility macros
+ --------------------------------------------------------------------*/
+#ifdef __clang__
+  #ifdef __has_feature(objc_arc)
+    #define ARC_POOL_START @autoreleasepool {
+  #else
+    #define ARC_POOL_START NSAutoreleasePool *pool = [NSAutoreleasePool new];
+  #endif
+#else
+  #define ARC_POOL_START NSAutoreleasePool *pool = [NSAutoreleasePool new];
+#endif
+
+#ifdef __clang__
+  #ifdef __has_feature(objc_arc)
+    #define ARC_POOL_END }
+  #else
+    #define ARC_POOL_END [pool drain];
+  #endif
+#else
+  #define ARC_POOL_END [pool drain];
+#endif
+
 #ifndef UNUSED
 #define UNUSED(x)	((void)(x))	/* to avoid warnings */
 #endif
@@ -151,13 +174,11 @@ static void FWUtilStopEventStream()
 
 static void* FWWatchThreadMain(void*)
 {
-	@autoreleasepool{
-		
+	ARC_POOL_START
 		FWUtilStartEventStream();
 		threadStateReadyToBeStopped = true;
 		CFRunLoopRun();
-		
-	}
+	ARC_POOL_END
 	
 	return 0;
 }
@@ -185,8 +206,7 @@ void FWStart(const char* path)
 	if(!path)
 		return;
 	
-	@autoreleasepool
-	{	
+	ARC_POOL_START	
 		FWLazyInit();
 
 		NSString* newPath = [NSString stringWithUTF8String: path];
@@ -204,7 +224,7 @@ void FWStart(const char* path)
 		
 		FWUtilStopEventStream();	// Also causes thread to stop running
 		FWStartWatcherThread();
-	}
+	ARC_POOL_END
 }
 
 void FWStop(const char* path)
@@ -212,8 +232,7 @@ void FWStop(const char* path)
 	if(!path)
 		return;
 	
-	@autoreleasepool 
-	{
+	ARC_POOL_START
 		FWLazyInit();
 		
 		NSString* pathToRemove = [NSString stringWithUTF8String:path];
@@ -221,25 +240,23 @@ void FWStop(const char* path)
 		
 		FWUtilStopEventStream();
 		FWStartWatcherThread();
-	}
+	ARC_POOL_END
 }
 
 void FWStopAll(void)
 {
-	@autoreleasepool 
-	{
+	ARC_POOL_START
 		FWLazyInit();
 		
 		FWUtilStopEventStream();
 		
 		[pathsToWatch removeAllObjects];
-	}
+	ARC_POOL_END
 }
 
 char* FWEnumChangedFile(void)
 {
-	@autoreleasepool 
-	{
+	ARC_POOL_START
 		FWLazyInit();
 		
 		// Is there anything in the changed files array?
@@ -257,7 +274,7 @@ char* FWEnumChangedFile(void)
 		OSSpinLockUnlock(&changedFilesLock);
 		
 		return path;
-	}
+	ARC_POOL_END
 }
 
 /*-------------------------------------------------------------------
@@ -275,9 +292,16 @@ void FWWatchFolder(const char* filename)
 	BOOL isDirectory = NO;
 	BOOL fileExists = NO;
 	
+	// Retrieve the absolute path of the specified filename
+	NSString* filePath = [NSString stringWithUTF8String: filename];
+	if(![filePath isAbsolutePath])
+	{
+		filePath = [[fm currentDirectoryPath] stringByAppendingPathComponent: filePath];
+		filePath = [filePath stringByStandardizingPath];
+	}
+
 	// Check if the file exists
 	// If not, just give up
-	NSString* filePath = [NSString stringWithUTF8String: filename];
 	fileExists = [fm fileExistsAtPath: filePath isDirectory: &isDirectory];
 	if(!fileExists)
 		return;
@@ -289,7 +313,8 @@ void FWWatchFolder(const char* filename)
 		baseDir = filePath;
 	else
 		baseDir = [filePath stringByDeletingLastPathComponent];
-	
+
+	printf("Watching %s\n", [baseDir UTF8String]);
 	FWStart([baseDir UTF8String]);
 	
 	[fm release];

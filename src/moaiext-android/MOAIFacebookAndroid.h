@@ -27,7 +27,9 @@ class MOAIFacebookAndroid :
 private:
 
 	//----------------------------------------------------------------//
+	static int	_extendToken	( lua_State* L );
 	static int	_getToken		( lua_State* L );
+	static int	_graphRequest	( lua_State* L );
 	static int	_init			( lua_State* L );
 	static int	_login			( lua_State* L );
 	static int	_logout			( lua_State* L );

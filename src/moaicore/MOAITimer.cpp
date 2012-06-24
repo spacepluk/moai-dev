@@ -159,7 +159,7 @@ bool MOAITimer::ApplyAttrOp ( u32 attrID, MOAIAttrOp& attrOp, u32 op ) {
 		attrID = UNPACK_ATTR ( attrID );
 		
 		if ( attrID == ATTR_TIME ) {
-			attrOp.Apply ( this->GetTime (), op, MOAINode::ATTR_READ );
+			attrOp.Apply ( this->GetTime (), op, MOAIAttrOp::ATTR_READ );
 			return true;
 		}
 	}
@@ -237,6 +237,7 @@ void MOAITimer::DoStep ( float step ) {
 						this->mCycle += 1.0f;
 					}
 
+					this->OnLoop ();
 					this->OnBeginSpan ();
 					
 					float end = this->mTime < this->mEndTime ? this->mTime : this->mEndTime;
@@ -266,6 +267,7 @@ void MOAITimer::DoStep ( float step ) {
 						this->mCycle -= 1.0f;
 					}
 
+					this->OnLoop ();
 					this->OnBeginSpan ();
 					
 					float end = this->mTime > this->mStartTime ? this->mTime : this->mStartTime;
@@ -301,6 +303,7 @@ void MOAITimer::DoStep ( float step ) {
 					}
 					
 					this->mDirection *= -1.0f;
+					this->OnLoop ();
 					this->OnBeginSpan ();
 				}
 			}
@@ -319,38 +322,37 @@ void MOAITimer::DoStep ( float step ) {
 //----------------------------------------------------------------//
 void MOAITimer::GenerateKeyframeCallbacks ( float t0, float t1, bool end ) {
 
+	if ( t0 == t1 ) return;
 	u32 size = this->mCurve ? this->mCurve->Size () : 0;
-	
-	if ( size ) {
+	if ( !size ) return;
 		
-		if ( t0 != t1 ) {
+	u32 keyID = ( int )this->mCurve->FindKeyID ( t0 );
+	if ( size <= keyID ) {
+		keyID = 0;
+	}
+	
+	if ( t0 < t1 ) {
+	
+		for ( ; keyID < size; ++keyID ) {
+			const MOAIAnimKey& key = this->mCurve->GetKey ( keyID );
 			
-			u32 keyID = ( int )this->mCurve->FindKeyID ( t0 );
-			
-			if ( t0 < t1 ) {
-			
-				for ( ; keyID < size; ++keyID ) {
-					MOAIAnimKey& key = ( *this->mCurve )[ keyID ];
-					
-					if (( end && ( key.mTime >= t1 )) || (( key.mTime >= t0 ) && ( key.mTime < t1 ))) {
-						this->OnKeyframe ( keyID, key.mTime, key.mValue );
-					}
-					
-					if ( key.mTime >= t1 ) break;
-				}
+			if (( end && ( key.mTime >= t1 )) || (( key.mTime >= t0 ) && ( key.mTime < t1 ))) {
+				this->OnKeyframe ( keyID, key.mTime, this->mCurve->GetSample ( keyID ));
 			}
-			else {
 			
-				for ( ; ( int )keyID > -1; --keyID ) {
-					MOAIAnimKey& key = ( *this->mCurve )[ keyID ];
-				
-					if (( end && ( key.mTime <= t1 )) || (( key.mTime <= t0 ) && ( key.mTime > t1 ))) {
-						this->OnKeyframe ( keyID, key.mTime, key.mValue );
-					}
-					
-					if ( key.mTime <= t1 ) break;
-				}
+			if ( key.mTime >= t1 ) break;
+		}
+	}
+	else {
+		
+		for ( ; ( int )keyID > -1; --keyID ) {
+			const MOAIAnimKey& key = this->mCurve->GetKey ( keyID );
+		
+			if (( end && ( key.mTime <= t1 )) || (( key.mTime <= t0 ) && ( key.mTime > t1 ))) {
+				this->OnKeyframe ( keyID, key.mTime, this->mCurve->GetSample ( keyID ));
 			}
+			
+			if ( key.mTime <= t1 ) break;
 		}
 	}
 }
@@ -456,6 +458,15 @@ void MOAITimer::OnKeyframe ( u32 idx, float time, float value ) {
 		state.Push ( time );
 		state.Push ( value );
 		state.DebugCall ( 5, 0 );
+	}
+}
+
+//----------------------------------------------------------------//
+void MOAITimer::OnLoop () {
+	
+	MOAILuaStateHandle state = MOAILuaRuntime::Get ().State ();
+	if ( this->PushListenerAndSelf ( EVENT_TIMER_LOOP, state )) {
+		state.DebugCall ( 1, 0 );
 	}
 }
 

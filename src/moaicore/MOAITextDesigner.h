@@ -25,13 +25,37 @@ private:
 	
 	MOAIGlyphSet*			mDeck;
 	
+	float	mWidth;
+	float	mHeight;
+	
+	int		mLineIdx;
+	u32		mLineSpriteID;
+	u32		mLineSize;
+	float	mLineAscent;
+	USRect	mLineRect;
+	
+	int		mTokenIdx;
+	u32		mTokenSpriteID;
+	u32		mTokenSize;
+	float	mTokenAscent;
+	USRect	mTokenRect;
+	
+	USVec2D	mPen;
+	MOAIGlyph* mPrevGlyph;
+	
+	MOAITextBox* mTextBox;
+	
 	//----------------------------------------------------------------//
-	u32				NextChar				( MOAITextBox& textBox );
+	void			AcceptLine				();
+	void			AcceptToken				();
+	void			Align					();
+	u32				NextChar				();
 
 public:
 
 	//----------------------------------------------------------------//
-	void			BuildLayout				( MOAITextBox& textBox );
+	void			BuildLayout				();
+	void			Init					( MOAITextBox& textBox );
 					MOAITextDesigner		();
 	virtual			~MOAITextDesigner		();
 };

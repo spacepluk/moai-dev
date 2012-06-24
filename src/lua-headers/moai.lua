@@ -221,7 +221,7 @@ MOAIProp.extend (
 		initTransform2DInterface ( interface, superInterface )
 		
 		function interface.setFrame ( self, xMin, yMin, xMax, yMax )
-			superInterface.setFrame ( self, xMin, yMin, 0, xMax, yMax, 0 )
+			superInterface.setBounds ( self, xMin, yMin, 0, xMax, yMax, 0 )
 		end
 		
 		function interface.getRect ( self )			
@@ -345,6 +345,7 @@ MOAITransform.extend (
 
 MOAIApp = MOAIAppAndroid or MOAIAppIOS
 MOAIDialog = MOAIDialogAndroid or MOAIDialogIOS
+MOAIMoviePlayer = MOAIMoviePlayerAndroid or MOAIMoviePlayerIOS
 
 -- Optional 3rd party extensions
 MOAIAdColony = MOAIAdColonyAndroid or MOAIAdColonyIOS

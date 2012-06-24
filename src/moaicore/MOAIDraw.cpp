@@ -36,6 +36,34 @@ int MOAIDraw::_drawAxisGrid ( lua_State* L ) {
 }
 
 //----------------------------------------------------------------//
+/**	@name	drawBoxOutline
+	@text	Draw a box outline.
+	
+	@in		number x0
+	@in		number y0
+	@in		number z0
+	@in		number x1
+	@in		number y1
+	@in		number z1
+	@out	nil
+*/
+int MOAIDraw::_drawBoxOutline ( lua_State* L ) {
+
+	MOAILuaState state ( L );
+
+	USBox box;
+	box.mMin.mX = state.GetValue < float >( 1, 0.0f );
+	box.mMin.mY = state.GetValue < float >( 2, 0.0f );
+	box.mMin.mZ = state.GetValue < float >( 3, 0.0f );
+	box.mMax.mX = state.GetValue < float >( 4, box.mMin.mX );
+	box.mMax.mY = state.GetValue < float >( 5, box.mMin.mY );
+	box.mMax.mZ = state.GetValue < float >( 6, box.mMin.mZ );
+	MOAIDraw::DrawBoxOutline(box);
+	return 0;
+
+}
+
+//----------------------------------------------------------------//
 /**	@name	drawCircle
 	@text	Draw a circle.
 	
@@ -280,35 +308,7 @@ void MOAIDraw::Bind () {
 //----------------------------------------------------------------//
 void MOAIDraw::DrawAnimCurve ( const MOAIAnimCurve& curve, u32 resolution ) {
 
-	// TODO: this isn't entirely correct. the value of each key frame should be drawn
-	// and then the spans between keys should be filled in with an approximation of
-	// the resolution.
-
-	if ( !curve ) return;
-	
-	MOAIGfxDevice& gfxDevice = MOAIGfxDevice::Get ();
-	
-	float length = curve.GetLength ();
-	float step = length / ( float )resolution;
-	
-	gfxDevice.BeginPrim ( GL_LINE_STRIP );
-	
-	for ( u32 i = 0; i < resolution; ++i ) {
-		
-		float t = step * ( float )i;
-		float v = curve.GetFloatValue ( t );
-		
-		gfxDevice.WriteVtx ( t, v, 0.0f );
-		gfxDevice.WriteFinalColor4b ();
-	}
-	
-	float t = length;
-	float v = curve.GetFloatValue ( t );
-	
-	gfxDevice.WriteVtx ( t, v, 0.0f );
-	gfxDevice.WriteFinalColor4b ();
-	
-	gfxDevice.EndPrim ();
+	curve.Draw ( resolution );
 }
 
 //----------------------------------------------------------------//
@@ -809,6 +809,7 @@ void MOAIDraw::RegisterLuaClass ( MOAILuaState& state ) {
 	luaL_Reg regTable [] = {
 		{ "drawAnimCurve",			_drawAnimCurve },
 		//{ "drawAxisGrid",			_drawAxisGrid }, // TODO
+		{ "drawBoxOutline",			_drawBoxOutline },
 		{ "drawCircle",				_drawCircle },
 		{ "drawEllipse",			_drawEllipse },
 		//{ "drawGrid",				_drawGrid }, // TODO

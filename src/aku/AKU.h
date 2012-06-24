@@ -32,6 +32,11 @@
 	AKU_API AKU##funcname##Func	AKUGetFunc_##funcname (); \
 	AKU_API void AKUSetFunc_##funcname ( AKU##funcname##Func func );
 
+enum {
+	AKU_ORIENTATION_PORTRAIT,
+	AKU_ORIENTATION_LANDSCAPE,
+};
+
 // Callback management
 typedef void ( *AKUEnterFullscreenModeFunc )	();
 typedef void ( *AKUErrorTracebackFunc )         ( const char* message, struct lua_State* L, int level );
@@ -71,6 +76,7 @@ AKU_API void			AKURender						();
 AKU_API void			AKURunBytecode					( void* data, size_t size );
 AKU_API void			AKURunScript					( const char* filename );
 AKU_API void			AKURunString					( const char* script );
+AKU_API void			AKUSetOrientation				( int orientation );
 AKU_API void			AKUSetScreenDpi					( int dpi );
 AKU_API void			AKUSetScreenSize				( int width, int height );
 AKU_API void			AKUSetViewSize					( int width, int height );
@@ -96,7 +102,10 @@ AKU_API void			AKUSetInputDeviceWheel			( int deviceID, int sensorID, char const
 // input events api
 AKU_API void			AKUEnqueueButtonEvent			( int deviceID, int sensorID, bool down );
 AKU_API void			AKUEnqueueCompassEvent			( int deviceID, int sensorID, float heading );
+AKU_API void			AKUEnqueueKeyboardAltEvent		( int deviceID, int sensorID, bool down );
+AKU_API void			AKUEnqueueKeyboardControlEvent	( int deviceID, int sensorID, bool down );
 AKU_API void			AKUEnqueueKeyboardEvent			( int deviceID, int sensorID, int keyID, bool down );
+AKU_API void			AKUEnqueueKeyboardShiftEvent	( int deviceID, int sensorID, bool down );
 AKU_API void			AKUEnqueueLevelEvent			( int deviceID, int sensorID, float x, float y, float z );
 AKU_API void			AKUEnqueueLocationEvent			( int deviceID, int sensorID, double longitude, double latitude, double altitude, float hAccuracy, float vAccuracy, float speed );
 AKU_API void			AKUEnqueuePointerEvent			( int deviceID, int sensorID, int x, int y );

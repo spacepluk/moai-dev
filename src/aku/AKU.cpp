@@ -160,9 +160,27 @@ void AKUEnqueueCompassEvent ( int deviceID, int sensorID, float heading ) {
 }
 
 //----------------------------------------------------------------//
+void AKUEnqueueKeyboardAltEvent ( int deviceID, int sensorID, bool down ) {
+
+	MOAIInputMgr::Get ().EnqueueKeyboardEvent (( u8 )deviceID, ( u8 )sensorID, MOAIKeyCodes::ALT, down );
+}
+
+//----------------------------------------------------------------//
+void AKUEnqueueKeyboardControlEvent ( int deviceID, int sensorID, bool down ) {
+
+	MOAIInputMgr::Get ().EnqueueKeyboardEvent (( u8 )deviceID, ( u8 )sensorID, MOAIKeyCodes::CONTROL, down );
+}
+
+//----------------------------------------------------------------//
 void AKUEnqueueKeyboardEvent ( int deviceID, int sensorID, int keyID, bool down ) {
 
 	MOAIInputMgr::Get ().EnqueueKeyboardEvent (( u8 )deviceID, ( u8 )sensorID, keyID, down );
+}
+
+//----------------------------------------------------------------//
+void AKUEnqueueKeyboardShiftEvent ( int deviceID, int sensorID, bool down ) {
+
+	MOAIInputMgr::Get ().EnqueueKeyboardEvent (( u8 )deviceID, ( u8 )sensorID, MOAIKeyCodes::SHIFT, down );
 }
 
 //----------------------------------------------------------------//
@@ -214,7 +232,6 @@ void AKUFinalize () {
 		
 		delete gContextMap;
 		gContextMap = 0;
-		gSysInit = true;
 	}
 	
 	if ( !gSysInit ) {
@@ -436,6 +453,12 @@ void AKUSetUserdata ( void* userdata ) {
 	}
 }
 
+//----------------------------------------------------------------//
+void AKUSetOrientation ( int orientation ) {
+
+	MOAIGfxDevice::Get ().SetLandscape ( orientation == AKU_ORIENTATION_LANDSCAPE );
+}
+
 //----------------------------------------------------------------//	
 void AKUSetScreenDpi ( int dpi ) {
 
@@ -445,8 +468,8 @@ void AKUSetScreenDpi ( int dpi ) {
 //----------------------------------------------------------------//
 void AKUSetScreenSize ( int width, int height ) {
 
-	MOAIEnvironment::Get ().SetValue ( MOAI_ENV_screenWidth, width );
-	MOAIEnvironment::Get ().SetValue ( MOAI_ENV_screenHeight, height );
+	MOAIEnvironment::Get ().SetValue ( MOAI_ENV_horizontalResolution, width );
+	MOAIEnvironment::Get ().SetValue ( MOAI_ENV_verticalResolution, height );
 }
 
 //----------------------------------------------------------------//
@@ -472,4 +495,3 @@ void AKUUpdate () {
 
 	MOAISim::Get ().Update ();
 }
-

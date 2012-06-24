@@ -12,7 +12,7 @@ using namespace std;
 //================================================================//
 
 //----------------------------------------------------------------//
-int ZLZipStream::AffirmBlock () {
+void ZLZipStream::AffirmBlock () {
 
 	int blockID = ( int )( this->mUncompressedCursor / ZIP_STREAM_BLOCK_SIZE );
 	int sign = blockID & 1 ? 1 : 0;
@@ -20,29 +20,29 @@ int ZLZipStream::AffirmBlock () {
 	ZLCacheBlock* block = &this->mBlock [ sign ];
 	
 	// if the block is already cached, we're good
-	if ( block->mBlockID == blockID ) return 0;
+	if ( block->mBlockID == blockID ) return;
 	
 	// initialize the block
 	block->mBlockID = blockID;
 	block->mBase = blockID * ZIP_STREAM_BLOCK_SIZE;
 	block->mSize = 0;
 	
-	if ( !this->mCompression ) {	
+	if ( this->mCompression ) {
+		
+		// if the new block is behind the last block we loaded, reset
+		if ( blockID < this->mPrevBlockID ) {
+			this->ResetZipStream ();
+		}
+		
+		// decompress blocks until we're caught up
+		for ( ; this->mPrevBlockID < blockID; ++this->mPrevBlockID ) {
+			block->mSize = this->Inflate ( block->mCache, ZIP_STREAM_BLOCK_SIZE, this->mFileBuffer, this->mFileBufferSize );
+		}
+	}
+	else {
 		fseek ( this->mFile, this->mBaseAddr + block->mBase, SEEK_SET );
 		block->mSize = fread ( block->mCache, 1, ZIP_STREAM_BLOCK_SIZE, this->mFile );
-		return 0;
 	}
-	
-	// if the new block is behind the last block we loaded, reset
-	if ( blockID < this->mPrevBlockID ) {
-		this->ResetZipStream ();
-	}
-	
-	// decompress blocks until we're caught up
-	for ( ; this->mPrevBlockID < blockID; ++this->mPrevBlockID ) {
-		block->mSize = this->Inflate ( block->mCache, ZIP_STREAM_BLOCK_SIZE, this->mFileBuffer, this->mFileBufferSize );
-	}
-	return 0;
 }
 
 //----------------------------------------------------------------//
@@ -95,6 +95,7 @@ int ZLZipStream::FullyCache () {
 	fclose ( this->mFile );
 	this->mFile = 0;
 	this->mFullyCached = 1;
+	this->mCompression = 0;
 	
 	return 0;
 }
@@ -232,8 +233,9 @@ ZLZipStream* ZLZipStream::Open ( ZLZipArchive* archive, const char* entryname ) 
 
 error:
 
-	self->Close ();
-	delete self;
+	if ( self ) {
+		delete self;
+	}
 	return 0;
 }
 

@@ -18,6 +18,38 @@
 #include <moaicore/MOAITransform.h>
 
 //================================================================//
+// MOAIDeckGfxState
+//================================================================//
+
+//----------------------------------------------------------------//
+MOAIDeckGfxState::MOAIDeckGfxState () :
+	mShader ( 0 ),
+	mTexture ( 0 ) {
+}
+
+//----------------------------------------------------------------//
+void MOAIDeckGfxState::Reset () {
+	this->mShader = 0;
+	this->mTexture = 0;
+}
+
+//----------------------------------------------------------------//
+void MOAIDeckGfxState::SetShader ( MOAIGfxState* shader ) {
+
+	if ( shader ) {
+		this->mShader = shader;
+	}
+}
+
+//----------------------------------------------------------------//
+void MOAIDeckGfxState::SetTexture ( MOAIGfxState* texture ) {
+
+	if ( texture ) {
+		this->mTexture = texture;
+	}
+}
+
+//================================================================//
 // local
 //================================================================//
 
@@ -117,6 +149,23 @@ void MOAIDeck::DrawIndex ( u32 idx, float xOff, float yOff, float zOff, float xS
 }
 
 //----------------------------------------------------------------//
+USBox MOAIDeck::GetBounds () {
+
+	if ( this->mBoundsDirty ) {
+		this->mMaxBounds = this->ComputeMaxBounds ();
+		
+		// flip and expand to account for flip flags
+		USBox bounds = this->mMaxBounds;
+		bounds.Scale ( -1.0f );
+		bounds.Bless ();
+		
+		this->mMaxBounds.Grow ( bounds );
+		this->mBoundsDirty = false;
+	}
+	return this->mMaxBounds;
+}
+
+//----------------------------------------------------------------//
 USBox MOAIDeck::GetBounds ( u32 idx, MOAIDeckRemapper* remapper ) {
 
 	idx = remapper ? remapper->Remap ( idx ) : idx;
@@ -124,10 +173,10 @@ USBox MOAIDeck::GetBounds ( u32 idx, MOAIDeckRemapper* remapper ) {
 	USBox bounds;
 	
 	if ( this->mBoundsDeck ) {
-		bounds = this->mBoundsDeck->GetBounds ( idx & MOAITileFlags::CODE_MASK );
+		bounds = this->mBoundsDeck->GetItemBounds ( idx & MOAITileFlags::CODE_MASK );
 	}
 	else {
-		bounds = this->GetBounds ( idx & MOAITileFlags::CODE_MASK );
+		bounds = this->GetItemBounds ( idx & MOAITileFlags::CODE_MASK );
 	}
 
 	if ( idx & MOAITileFlags::FLIP_MASK ) {
@@ -144,28 +193,26 @@ USBox MOAIDeck::GetBounds ( u32 idx, MOAIDeckRemapper* remapper ) {
 }
 
 //----------------------------------------------------------------//
-MOAIGfxState* MOAIDeck::GetShader () {
+void MOAIDeck::GetGfxState ( MOAIDeckGfxState& gfxState ) {
 
-	return this->mShader ? this->mShader : this->GetShaderDefault ();
-}
-
-//----------------------------------------------------------------//
-MOAIGfxState* MOAIDeck::GetShaderDefault () {
-
-	return &MOAIShaderMgr::Get ().GetShader ( MOAIShaderMgr::DECK2D_SHADER );
-}
-
-//----------------------------------------------------------------//
-MOAIGfxState* MOAIDeck::GetTexture () {
-
-	return this->mTexture;
+	if ( this->mShader ) {
+		gfxState.SetShader ( this->mShader );
+	}
+	else {
+		gfxState.SetShader ( &MOAIShaderMgr::Get ().GetShader ( this->mDefaultShaderID ));
+	}
+	gfxState.SetTexture ( this->mTexture );
 }
 
 //----------------------------------------------------------------//
 MOAIDeck::MOAIDeck () :
-	mContentMask ( 0xffffffff ) {
+	mContentMask ( 0xffffffff ),
+	mDefaultShaderID ( MOAIShaderMgr::DECK2D_SHADER ),
+	mBoundsDirty ( true ) {
 	
 	RTTI_SINGLE ( MOAILuaObject )
+	
+	this->mMaxBounds.Init ( 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f );
 }
 
 //----------------------------------------------------------------//
@@ -192,4 +239,10 @@ void MOAIDeck::RegisterLuaFuncs ( MOAILuaState& state ) {
 	};
 
 	luaL_register ( state, 0, regTable );
+}
+
+//----------------------------------------------------------------//
+void MOAIDeck::SetBoundsDirty () {
+
+	this->mBoundsDirty = true;
 }

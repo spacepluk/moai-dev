@@ -17,6 +17,9 @@
 #include <moaicore/MOAIActionMgr.h>
 #include <moaicore/MOAIAnim.h>
 #include <moaicore/MOAIAnimCurve.h>
+#include <moaicore/MOAIAnimCurveBase.h>
+#include <moaicore/MOAIAnimCurveQuat.h>
+#include <moaicore/MOAIAnimCurveVec.h>
 #include <moaicore/MOAIAttrOp.h>
 #include <moaicore/MOAIBitmapFontReader.h>
 #include <moaicore/MOAIBlendMode.h>
@@ -31,6 +34,7 @@
 #include <moaicore/MOAICompassSensor.h>
 #include <moaicore/MOAICoroutine.h>
 #include <moaicore/MOAIDataBuffer.h>
+#include <moaicore/MOAIDataBufferStream.h>
 #include <moaicore/MOAIDataIOAction.h>
 #include <moaicore/MOAIDebugLines.h>
 #include <moaicore/MOAIDeck.h>
@@ -41,6 +45,7 @@
 #include <moaicore/MOAIEaseDriver.h>
 #include <moaicore/MOAIEaseType.h>
 #include <moaicore/MOAIEventSource.h>
+#include <moaicore/MOAIFileStream.h>
 #include <moaicore/MOAIFileSystem.h>
 #include <moaicore/MOAIFoo.h>
 #include <moaicore/MOAIFooMgr.h>
@@ -59,6 +64,7 @@
 #include <moaicore/MOAIGlyphCachePage.h>
 #include <moaicore/MOAIGlyphSet.h>
 #include <moaicore/MOAIGrid.h>
+#include <moaicore/MOAIGridDeck2D.h>
 #include <moaicore/MOAIGridPathGraph.h>
 #include <moaicore/MOAIGridSpace.h>
 #include <moaicore/MOAIImage.h>
@@ -75,6 +81,7 @@
 #include <moaicore/MOAILocationSensor.h>
 #include <moaicore/MOAILogMgr.h>
 #include <moaicore/MOAILogMessages.h>
+#include <moaicore/MOAIMemStream.h>
 #include <moaicore/MOAIMesh.h>
 #include <moaicore/MOAIMotionSensor.h>
 #include <moaicore/MOAIMultiTexture.h>
@@ -119,6 +126,9 @@
 #include <moaicore/MOAISim.h>
 #include <moaicore/MOAISpanList.h>
 #include <moaicore/MOAIStaticGlyphCache.h>
+#include <moaicore/MOAIStream.h>
+#include <moaicore/MOAIStreamReader.h>
+#include <moaicore/MOAIStreamWriter.h>
 #include <moaicore/MOAIStretchPatch2D.h>
 #include <moaicore/MOAISurfaceDeck2D.h>
 #include <moaicore/MOAITextBox.h>

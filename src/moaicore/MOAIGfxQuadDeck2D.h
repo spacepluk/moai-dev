@@ -31,20 +31,20 @@ private:
 	static int	_transform				( lua_State* L );
 	static int	_transformUV			( lua_State* L );
 	
+	//----------------------------------------------------------------//
+	USBox		ComputeMaxBounds		();
+	USBox		GetItemBounds			( u32 idx );
+	
 public:
 	
 	DECL_LUA_FACTORY ( MOAIGfxQuadDeck2D )
 	
 	//----------------------------------------------------------------//
 	void		DrawIndex				( u32 idx, float xOff, float yOff, float zOff, float xScl, float yScl, float zScl );
-	USBox		GetBounds				();
-	USBox		GetBounds				( u32 idx );
 				MOAIGfxQuadDeck2D		();
 				~MOAIGfxQuadDeck2D		();
 	void		RegisterLuaClass		( MOAILuaState& state );
 	void		RegisterLuaFuncs		( MOAILuaState& state );
-	void		ScaleScreenCoords		( float xScale, float yScale );
-	void		ScaleUVCoords			( float xScale, float yScale );
 	void		Transform				( const USAffine3D& mtx );
 	void		TransformUV				( const USAffine3D& mtx );
 };

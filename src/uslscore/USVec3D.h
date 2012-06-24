@@ -4,7 +4,7 @@
 #ifndef VEC3D_H
 #define	VEC3D_H
 
-template < typename TYPE > class tVec2;
+template < typename TYPE > class USMetaVec2D;
 
 //================================================================//
 // USMetaVec3D
@@ -16,6 +16,24 @@ public:
 	TYPE	mX;
 	TYPE	mY;
 	TYPE	mZ;
+
+	//----------------------------------------------------------------//
+	USMetaVec3D operator + ( const USMetaVec3D& v ) const {
+		USMetaVec3D < TYPE > result;
+		result.mX = this->mX + v.mX;
+		result.mY = this->mY + v.mY;
+		result.mZ = this->mZ + v.mZ;
+		return result;
+	}
+
+	//----------------------------------------------------------------//
+	USMetaVec3D operator - ( const USMetaVec3D& v ) const {
+		USMetaVec3D < TYPE > result;
+		result.mX = this->mX - v.mX;
+		result.mY = this->mY - v.mY;
+		result.mZ = this->mZ - v.mZ;
+		return result;
+	}
 
 	//----------------------------------------------------------------//
 	// V = V + vec
@@ -127,7 +145,7 @@ public:
 
 	//----------------------------------------------------------------//
 	template < typename PARAM_TYPE >
-	void Init ( tVec2 < PARAM_TYPE >& point ) {
+	void Init ( const USMetaVec2D < PARAM_TYPE >& point ) {
 		mX = ( TYPE )point.mX;
 		mY = ( TYPE )point.mY;
 		mZ = 0;
@@ -135,7 +153,7 @@ public:
 
 	//----------------------------------------------------------------//
 	template < typename PARAM_TYPE >
-	void Init ( USMetaVec3D < PARAM_TYPE >& vec ) {
+	void Init ( const USMetaVec3D < PARAM_TYPE >& vec ) {
 		mX = ( TYPE )vec.mX;
 		mY = ( TYPE )vec.mY;
 		mZ = ( TYPE )vec.mZ;

@@ -16,50 +16,74 @@
 //----------------------------------------------------------------//
 void USMemStream::Clear () {
 
+	this->ClearChunks ();
+
+	this->mGuestBuffer = 0;
+	this->mGuestBufferSize = 0;
+
+	this->mCursor = 0;
+	this->mLength = 0;
+}
+
+//----------------------------------------------------------------//
+void USMemStream::ClearChunks () {
+
 	if ( this->mChunks ) {
-		for ( u32 i = 0; i < this->mTotalChunks; ++i ) {
+		for ( size_t i = 0; i < this->mTotalChunks; ++i ) {
 			free ( this->mChunks [ i ]);
 		}
 		free ( this->mChunks );
 		
-		this->mLength = 0;
 		this->mTotalChunks = 0;
 		this->mChunks = 0;
 	}
-	
-	this->mCursor = 0;
 }
 
 //----------------------------------------------------------------//
-u32 USMemStream::GetCursor () {
+u32 USMemStream::GetCaps () {
+
+	return CAN_READ | CAN_WRITE | CAN_SEEK;
+}
+
+//----------------------------------------------------------------//
+size_t USMemStream::GetCursor () {
 
 	return this->mCursor;
 }
 
 //----------------------------------------------------------------//
-u32 USMemStream::GetLength () {
+size_t USMemStream::GetLength () {
 
 	return this->mLength;
 }
 
 //----------------------------------------------------------------//
-u32 USMemStream::ReadBytes ( void* buffer, u32 size ) {
+size_t USMemStream::ReadBytes ( void* buffer, size_t size ) {
 
-	if ( size == 0 ) return 0;
-
-	u32 cursor0 = this->mCursor;
-	u32 cursor1 = cursor0 + size;
+	size_t cursor0 = this->mCursor;
+	size_t cursor1 = cursor0 + size;
 
 	if ( cursor1 > this->mLength ) {
 		size = this->mLength - this->mCursor;
 		cursor1 = this->mLength;
 	}
 
-	u32 chunk0 = ( u32 )( cursor0 / this->mChunkSize );
-	u32 chunk1 = ( u32 )( cursor1 / this->mChunkSize );
+	if ( size == 0 ) return 0;
 
-	u32 offset0 = cursor0 - ( chunk0 * this->mChunkSize );
-	u32 offset1 = cursor1 - ( chunk1 * this->mChunkSize );
+	// if there's a guest buffer, use it
+	if ( this->mGuestBuffer ) {
+		memcpy ( buffer, &(( u8* )this->mGuestBuffer )[ this->mCursor ], size );
+		this->mCursor += size;
+		return size;
+	}
+
+	assert ( this->mChunks );
+
+	size_t chunk0 = ( size_t )( cursor0 / this->mChunkSize );
+	size_t chunk1 = ( size_t )( cursor1 / this->mChunkSize );
+
+	size_t offset0 = cursor0 - ( chunk0 * this->mChunkSize );
+	size_t offset1 = cursor1 - ( chunk1 * this->mChunkSize );
 
 	void* src = ( void* )(( uintptr )this->mChunks [ chunk0 ] + offset0 );
 	void* dest = buffer;
@@ -73,7 +97,7 @@ u32 USMemStream::ReadBytes ( void* buffer, u32 size ) {
 		memcpy ( dest, src, this->mChunkSize - offset0 );
 		dest = ( void* )(( uintptr )dest + this->mChunkSize - offset0 );
 		
-		for ( u32 i = ( chunk0 + 1 ); i < chunk1; ++i ) {
+		for ( size_t i = ( chunk0 + 1 ); i < chunk1; ++i ) {
 			memcpy ( dest, this->mChunks [ i ], this->mChunkSize );
 			dest = ( void* )(( uintptr )dest + this->mChunkSize );
 		}
@@ -86,11 +110,16 @@ u32 USMemStream::ReadBytes ( void* buffer, u32 size ) {
 }
 
 //----------------------------------------------------------------//
-void USMemStream::Reserve ( u32 length ) {
+void USMemStream::Reserve ( size_t length ) {
 
 	if ( length <= this->mLength ) return; 
+	if ( length <= this->mGuestBufferSize ) return;
+	
+	if ( this->mGuestBufferSize ) {
+		this->SetGuestBuffer ( 0, 0 );
+	} 
 
-	u32 totalChunks = ( length / this->mChunkSize ) + 1;
+	size_t totalChunks = ( length / this->mChunkSize ) + 1;
 	if ( totalChunks <= this->mTotalChunks ) return;
 		
 	void** chunks = ( void** )malloc ( totalChunks * sizeof ( void* ));
@@ -100,7 +129,7 @@ void USMemStream::Reserve ( u32 length ) {
 		free ( this->mChunks );
 	}
 	
-	for ( u32 i = this->mTotalChunks; i < totalChunks; ++i ) {
+	for ( size_t i = this->mTotalChunks; i < totalChunks; ++i ) {
 		chunks [ i ] = malloc ( this->mChunkSize );
 	}
 	
@@ -109,30 +138,7 @@ void USMemStream::Reserve ( u32 length ) {
 }
 
 //----------------------------------------------------------------//
-void USMemStream::Seek ( long offset, int origin ) {
-
-	switch ( origin ) {
-		case SEEK_CUR: {
-			this->mCursor = this->mCursor + offset;
-			break;
-		}
-		case SEEK_END: {
-			this->mCursor = this->mLength + offset;
-			break;
-		}
-		case SEEK_SET: {
-			this->mCursor = offset;
-			break;
-		}
-	}
-	
-	if ( this->mCursor > this->mLength ) {
-		this->mCursor = this->mLength;
-	}
-}
-
-//----------------------------------------------------------------//
-void USMemStream::SetChunkSize ( u32 chunkSize ) {
+void USMemStream::SetChunkSize ( size_t chunkSize ) {
 
 	assert ( chunkSize );
 	this->Clear ();
@@ -140,35 +146,45 @@ void USMemStream::SetChunkSize ( u32 chunkSize ) {
 }
 
 //----------------------------------------------------------------//
-STLString USMemStream::ToString ( u32 size ) {
+int USMemStream::SetCursor ( long offset ) {
 
-	if ( size == 0 ) return 0;
+	this->mCursor = offset;
+	return 0;
+}
 
-	if (( this->mCursor + size ) > this->mLength ) {
-		size = this->mLength - this->mCursor;
-	}
+//----------------------------------------------------------------//
+void USMemStream::SetGuestBuffer ( void* guestBuffer, size_t guestBufferSize ) {
+
+	// if guest buffer will not be large enough to accomodate contents of stream...
+	if ( guestBufferSize < this->mLength ) {
 	
-	STLString str;
-	char buffer [ DEFAULT_CHUNK_SIZE + 1 ];
-	u32 readSize = DEFAULT_CHUNK_SIZE;
+		// clear these out
+		this->mGuestBuffer = 0;
+		this->mGuestBufferSize = 0;
 	
-	while ( size > 0 ) {
-		
-		if ( size < readSize ) {
-			readSize = size;
+		// compy contents of the old guest buffer to chunks
+		if ( this->mGuestBuffer ) {
+			void* buffer = this->mGuestBuffer;
+			this->WriteBytes ( buffer, this->mLength );
 		}
-		
-		this->ReadBytes ( buffer, readSize );
-		buffer [ readSize ] = 0;
-		str.write ( "%s", buffer );
-		size -= readSize;
 	}
+	else {
 	
-	return str;
+		// this will also copy from the existing guest buffer, if any
+		this->ReadBytes ( guestBuffer, this->mLength );
+		
+		// don't need chunks (if any)
+		this->ClearChunks ();
+		
+		this->mGuestBuffer = guestBuffer;
+		this->mGuestBufferSize = guestBufferSize;
+	}
 }
 
 //----------------------------------------------------------------//
 USMemStream::USMemStream () :
+	mGuestBuffer ( 0 ),
+	mGuestBufferSize ( 0 ),
 	mChunkSize ( DEFAULT_CHUNK_SIZE ),
 	mTotalChunks ( 0 ),
 	mChunks ( 0 ),
@@ -182,20 +198,27 @@ USMemStream::~USMemStream () {
 }
 
 //----------------------------------------------------------------//
-u32 USMemStream::WriteBytes ( const void* buffer, u32 size ) {
+size_t USMemStream::WriteBytes ( const void* buffer, size_t size ) {
 
 	if ( !size ) return 0;
 
-	u32 cursor0 = this->mCursor;
-	u32 cursor1 = cursor0 + size;
+	size_t cursor0 = this->mCursor;
+	size_t cursor1 = cursor0 + size;
 
 	this->Reserve ( cursor1 );
 
-	u32 chunk0 = ( u32 )( cursor0 / this->mChunkSize );
-	u32 chunk1 = ( u32 )( cursor1 / this->mChunkSize );
+	if( this->mGuestBuffer ) {
+		memcpy ( &(( u8* )this->mGuestBuffer )[ this->mCursor ], buffer, size );
+		this->mCursor += size;
+		this->mLength += size;
+		return size;
+	}
 
-	u32 offset0 = cursor0 - ( chunk0 * this->mChunkSize );
-	u32 offset1 = cursor1 - ( chunk1 * this->mChunkSize );
+	size_t chunk0 = ( size_t )( cursor0 / this->mChunkSize );
+	size_t chunk1 = ( size_t )( cursor1 / this->mChunkSize );
+
+	size_t offset0 = cursor0 - ( chunk0 * this->mChunkSize );
+	size_t offset1 = cursor1 - ( chunk1 * this->mChunkSize );
 
 	void* dest = ( void* )(( uintptr )this->mChunks [ chunk0 ] + offset0 );
 	const void* src = buffer;
@@ -209,7 +232,7 @@ u32 USMemStream::WriteBytes ( const void* buffer, u32 size ) {
 		memcpy ( dest, src, this->mChunkSize - offset0 );
 		src = ( void* )(( uintptr )src + this->mChunkSize - offset0 );
 		
-		for ( u32 i = ( chunk0 + 1 ); i < chunk1; ++i ) {
+		for ( size_t i = ( chunk0 + 1 ); i < chunk1; ++i ) {
 			memcpy ( this->mChunks [ i ], src, this->mChunkSize );
 			src = ( void* )(( uintptr )src + this->mChunkSize );
 		}

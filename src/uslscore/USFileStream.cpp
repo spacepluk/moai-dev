@@ -24,9 +24,15 @@ void USFileStream::Flush () {
 }
 
 //----------------------------------------------------------------//
-u32 USFileStream::GetCursor () {
+u32 USFileStream::GetCaps () {
 
-	return ( u32 )zl_ftell ( this->mFile );
+	return this->mFile ? this->mCaps : 0;
+}
+
+//----------------------------------------------------------------//
+size_t USFileStream::GetCursor () {
+
+	return ( size_t )zl_ftell ( this->mFile );
 }
 
 //----------------------------------------------------------------//
@@ -36,57 +42,112 @@ ZLFILE* USFileStream::GetFile () {
 }
 
 //----------------------------------------------------------------//
-u32 USFileStream::GetLength () {
+size_t USFileStream::GetLength () {
 
 	return this->mLength;
 }
 
 //----------------------------------------------------------------//
-bool USFileStream::OpenRead ( cc8* filename ) {
+bool USFileStream::Open ( cc8* filename, u32 mode ) {
 
-	Close ();
+	this->Close ();
 	
-	this->mFile = ( ZLFILE* )zl_fopen ( filename, "rb" );
-	if ( this->mFile ) {
+	if ( !filename ) return false;
+	if ( !filename [ 0 ]) return false;
+	
+	zl_stat fileStat;
+	bool exists = USFileSys::GetFileStat ( filename, fileStat );
+	
+	bool affirmPath = false;
+	cc8* modeStr = 0;
 
-		zl_fseek ( this->mFile, 0L, SEEK_END );
-		this->mLength = ( u32 )zl_ftell ( this->mFile );
-		zl_fseek ( this->mFile, 0L, SEEK_SET );
+	switch ( mode ) {
+	
+		case READ:
+			
+			modeStr = "rb";
+			this->mCaps = CAN_READ | CAN_SEEK;
+			break;
+		
+		case READ_WRITE:
+		
+			modeStr = "rb+";
+			this->mCaps = CAN_READ | CAN_WRITE | CAN_SEEK;
+			break;
+		
+		case READ_WRITE_AFFIRM:
+			
+			if ( exists ) {
+				modeStr = "rb+";
+			}
+			else {
+				affirmPath = true;
+				modeStr = "wb+";
+			}
+			this->mCaps = CAN_READ | CAN_WRITE | CAN_SEEK;
+			break;
+		
+		case READ_WRITE_NEW:
+			
+			affirmPath = true;
+			modeStr = "wb+";
+			this->mCaps = CAN_READ | CAN_WRITE | CAN_SEEK;
+			break;
+		
+		case WRITE:
+			
+			modeStr = "rb+";
+			this->mCaps = CAN_WRITE | CAN_SEEK;
+			break;
 	}
-
-	return this->mFile != NULL;
-}
-
-//----------------------------------------------------------------//
-bool USFileStream::OpenWrite ( cc8* filename, bool affirmPath ) {
-
-	Close ();
 	
 	if ( affirmPath ) {
-		bool result = USFileSys::AffirmPath ( USFileSys::TruncateFilename ( filename ));
-		if ( !result ) return false;
+		if ( !USFileSys::AffirmPath ( USFileSys::TruncateFilename ( filename ))) {
+			modeStr = 0;
+		}
 	}
-
-	this->mFile = ( ZLFILE* )zl_fopen ( filename, "wb" );
+	
+	if ( modeStr ) {
+		
+		this->mFile = ( ZLFILE* )zl_fopen ( filename, modeStr );
+		
+		if ( this->mFile && exists ) {
+			this->mLength = fileStat.mSize;
+		}
+	}
+	
 	return this->mFile != NULL;
 }
 
 //----------------------------------------------------------------//
-u32 USFileStream::ReadBytes ( void* buffer, u32 size ) {
+bool USFileStream::OpenRead ( cc8* filename ) {
 
-	return ( u32 )zl_fread ( buffer, 1, size, this->mFile );
+	return this->Open ( filename, READ );
 }
 
 //----------------------------------------------------------------//
-void USFileStream::Seek ( long offset, int origin ) {
+bool USFileStream::OpenWrite ( cc8* filename ) {
 
-	zl_fseek ( this->mFile, offset, origin );
+	return this->Open ( filename, READ_WRITE_NEW );
+}
+
+//----------------------------------------------------------------//
+size_t USFileStream::ReadBytes ( void* buffer, size_t size ) {
+
+	return zl_fread ( buffer, 1, size, this->mFile );
+}
+
+//----------------------------------------------------------------//
+int USFileStream::SetCursor ( long offset ) {
+
+	return zl_fseek ( this->mFile, offset, SEEK_SET );
 }
 
 //----------------------------------------------------------------//
 USFileStream::USFileStream () :
 	mFile ( 0 ),
-	mLength ( 0 ) {
+	mLength ( 0 ),
+	mCaps ( 0 ) {
 }
 
 //----------------------------------------------------------------//
@@ -95,14 +156,13 @@ USFileStream::~USFileStream () {
 }
 
 //----------------------------------------------------------------//
-u32 USFileStream::WriteBytes ( const void* buffer, u32 size ) {
+size_t USFileStream::WriteBytes ( const void* buffer, size_t size ) {
 
-	u32 result = ( u32 )zl_fwrite ( buffer, 1, size, this->mFile );
+	size_t result = zl_fwrite ( buffer, 1, size, this->mFile );
 	
-	u32 cursor = ( u32 )zl_ftell ( this->mFile );
+	size_t cursor = ( size_t )zl_ftell ( this->mFile );
 	if ( cursor > this->mLength ) {
 		this->mLength = cursor;
 	}
-
 	return result;
 }

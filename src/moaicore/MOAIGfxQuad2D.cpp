@@ -47,6 +47,7 @@ int MOAIGfxQuad2D::_setQuad ( lua_State* L ) {
 	quad.mV [ 3 ].mY = state.GetValue < float >( 9, 0.0f );
 
 	self->mQuad.SetVerts ( quad.mV [ 0 ], quad.mV [ 1 ], quad.mV [ 2 ], quad.mV [ 3 ]);
+	self->SetBoundsDirty ();
 
 	return 0;
 }
@@ -71,6 +72,7 @@ int MOAIGfxQuad2D::_setRect ( lua_State* L ) {
 	float y1	= state.GetValue < float >( 5, 0.0f );
 	
 	self->mQuad.SetVerts ( x0, y0, x1, y1 );
+	self->SetBoundsDirty ();
 
 	return 0;
 }
@@ -135,7 +137,13 @@ int MOAIGfxQuad2D::_setUVRect ( lua_State* L ) {
 }
 
 //----------------------------------------------------------------//
-// TODO: doxygen
+/**	@name	transform
+	@text	Apply the given MOAITransform to all the vertices in the deck.
+	
+	@in		MOAIGfxQuad2D self
+	@in		MOAITransform transform
+	@out	nil
+*/
 int MOAIGfxQuad2D::_transform ( lua_State* L ) {
 	MOAI_LUA_SETUP ( MOAIGfxQuad2D, "UU" )
 	
@@ -143,12 +151,19 @@ int MOAIGfxQuad2D::_transform ( lua_State* L ) {
 	if ( transform ) {
 		transform->ForceUpdate ();
 		self->Transform ( transform->GetLocalToWorldMtx ());
+		self->SetBoundsDirty ();
 	}
 	return 0;
 }
 
 //----------------------------------------------------------------//
-// TODO: doxygen
+/**	@name	transformUV
+	@text	Apply the given MOAITransform to all the uv coordinates in the deck.
+	
+	@in		MOAIGfxQuad2D self
+	@in		MOAITransform transform
+	@out	nil
+*/
 int MOAIGfxQuad2D::_transformUV ( lua_State* L ) {
 	MOAI_LUA_SETUP ( MOAIGfxQuad2D, "UU" )
 	
@@ -165,6 +180,11 @@ int MOAIGfxQuad2D::_transformUV ( lua_State* L ) {
 //================================================================//
 
 //----------------------------------------------------------------//
+USBox MOAIGfxQuad2D::ComputeMaxBounds () {
+	return this->GetItemBounds ( 0 );
+}
+
+//----------------------------------------------------------------//
 void MOAIGfxQuad2D::DrawIndex ( u32 idx, float xOff, float yOff, float zOff, float xScl, float yScl, float zScl ) {
 	UNUSED ( idx );
 	UNUSED ( zScl );
@@ -179,17 +199,12 @@ void MOAIGfxQuad2D::DrawIndex ( u32 idx, float xOff, float yOff, float zOff, flo
 }
 
 //----------------------------------------------------------------//
-USBox MOAIGfxQuad2D::GetBounds () {
+USBox MOAIGfxQuad2D::GetItemBounds ( u32 idx ) {
+	UNUSED ( idx );
 	USBox bounds;
 	USRect rect = this->mQuad.GetVtxBounds ();
 	bounds.Init ( rect.mXMin, rect.mYMax, rect.mXMax, rect.mYMin, 0.0f, 0.0f );	
 	return bounds;
-}
-
-//----------------------------------------------------------------//
-USBox MOAIGfxQuad2D::GetBounds ( u32 idx ) {
-	UNUSED ( idx );
-	return this->GetBounds ();
 }
 
 //----------------------------------------------------------------//

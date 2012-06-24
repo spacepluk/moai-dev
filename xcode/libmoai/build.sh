@@ -8,16 +8,16 @@
 
 set -e
 
-osx_schemes=( "libmoai-osx" "libmoai-osx-3rdparty" "libmoai-osx-fmod" "libmoai-osx-luaext" "libmoai-osx-untz" "libmoai-osx-zlcore" )
+osx_schemes=( "libmoai-osx" "libmoai-osx-3rdparty" "libmoai-osx-fmod-ex" "libmoai-osx-luaext" "libmoai-osx-untz" "libmoai-osx-zlcore" )
 osx_sdks=( "macosx" )
 osx_architectures=( "i386" )
 
-ios_schemes=( "libmoai-ios" "libmoai-ios-3rdparty" "libmoai-ios-facebook" "libmoai-ios-fmod" "libmoai-ios-luaext" "libmoai-ios-tapjoy" "libmoai-ios-untz" "libmoai-ios-zlcore" )
+ios_schemes=( "libmoai-ios" "libmoai-ios-3rdparty" "libmoai-ios-facebook" "libmoai-ios-fmod-ex" "libmoai-ios-luaext" "libmoai-ios-tapjoy" "libmoai-ios-untz" "libmoai-ios-zlcore" )
 ios_sdks=( "iphoneos" "iphonesimulator" )
 ios_architectures=( "i386" "armv6" "armv7" )
 
 usage="usage: $0 [-j <jobName>] [-c Debug|Release|all] [-p osx|ios|all]"
-job="default"
+job="moai"
 configurations="all"
 platforms="all"
 
@@ -75,30 +75,30 @@ for platform in $platforms; do
 		for sdk in $sdks; do		
 			for scheme in $schemes; do
 				echo "Building libmoai/$scheme/$sdk for $platform $config"
-				xcodebuild -configuration $config -workspace libmoai.xcodeproj/project.xcworkspace -scheme $scheme -sdk $sdk build CONFIGURATION_BUILD_DIR=/tmp/$platform/$job/libmoai/$scheme/$sdk/$config
-				echo "Done. Binaries available in /tmp/$platform/$job/libmoai/$scheme/$sdk/$config"
+				xcodebuild -configuration $config -workspace libmoai.xcodeproj/project.xcworkspace -scheme $scheme -sdk $sdk build CONFIGURATION_BUILD_DIR=/tmp/$job/$platform/$scheme/$sdk/$config
+				echo "Done. Binaries available in /tmp/$job/$platform/$scheme/$sdk/$config"
 			done
 		done
 	done
 
 	for config in $configurations; do
-		rm -rf "/tmp/$platform/$job/libmoai/$config/universal"
-		mkdir -p "/tmp/$platform/$job/libmoai/$config/universal"
+		rm -rf "/tmp/$job/$platform/$config/universal"
+		mkdir -p "/tmp/$job/$platform/$config/universal"
 		for scheme in $schemes; do
 			libs=
 			for sdk in $sdks; do
-				libs="$libs /tmp/$platform/$job/libmoai/$scheme/$sdk/$config/$scheme.a"
+				libs="$libs /tmp/$job/$platform/$scheme/$sdk/$config/$scheme.a"
 			done
-			lipo -create -output "/tmp/$platform/$job/libmoai/$config/universal/$scheme.a" $libs						
+			lipo -create -output "/tmp/$job/$platform/$config/universal/$scheme.a" $libs						
 		done
 	done
 
 	for config in $configurations; do
 		for arch in $architectures; do
-			rm -rf "/tmp/$platform/$job/libmoai/$config/$arch"
-			mkdir -p "/tmp/$platform/$job/libmoai/$config/$arch"
+			rm -rf "/tmp/$job/$platform/$config/$arch"
+			mkdir -p "/tmp/$job/$platform/$config/$arch"
 			for scheme in $schemes; do
-				lipo -thin $arch -output "/tmp/$platform/$job/libmoai/$config/$arch/$scheme.a" "/tmp/$platform/$job/libmoai/$config/universal/$scheme.a"
+				lipo -thin $arch -output "/tmp/$job/$platform/$config/$arch/$scheme.a" "/tmp/$job/$platform/$config/universal/$scheme.a"
 			done
 		done
 	done

@@ -18,40 +18,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\asio.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\asio.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\asiodrivers.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\asiodrivers.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\asiodrvr.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\asiodrvr.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\asiolist.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\asiolist.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\asiosys.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\asiosys.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\dsound.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\dsound.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\ginclude.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\ginclude.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\iasiodrv.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\iasiodrv.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\iasiothiscallresolver.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\iasiothiscallresolver.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\RtAudio.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\RtAudio.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\RtError.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\RtError.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.8\include\soundcard.h">
+    <ClInclude Include="..\..\3rdparty\rtaudio-4.0.11\include\soundcard.h">
       <Filter>RTAudio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\3rdparty\untz\src\AudioMixer.h">
@@ -107,16 +107,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.8\include\asio.cpp">
+    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.11\include\asio.cpp">
       <Filter>RTAudio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.8\include\asiodrivers.cpp">
+    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.11\include\asiodrivers.cpp">
       <Filter>RTAudio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.8\include\asiolist.cpp">
+    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.11\include\asiolist.cpp">
       <Filter>RTAudio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.8\RtAudio.cpp">
+    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.11\RtAudio.cpp">
       <Filter>RTAudio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\3rdparty\untz\src\AudioMixer.cpp">
@@ -146,7 +146,7 @@
     <ClCompile Include="..\..\3rdparty\untz\src\UserAudioSource.cpp">
       <Filter>Source\Audio Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.8\include\iasiothiscallresolver.cpp">
+    <ClCompile Include="..\..\3rdparty\rtaudio-4.0.11\include\iasiothiscallresolver.cpp">
       <Filter>RTAudio</Filter>
     </ClCompile>
   </ItemGroup>

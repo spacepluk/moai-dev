@@ -145,6 +145,15 @@ static void _onSpecialFunc ( int key, int x, int y ) {
 }
 
 //----------------------------------------------------------------//
+#define SPECIAL_KEY_OFFSET 256
+static void _onSpecialUp ( int key, int x, int y ) {
+	( void )x;
+	( void )y;
+
+	AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key + SPECIAL_KEY_OFFSET, false );
+}
+
+//----------------------------------------------------------------//
 static void _onMouseButton ( int button, int state, int x, int y ) {
 	( void )x;
 	( void )y;
@@ -280,7 +289,7 @@ void _AKUOpenWindowFunc ( const char* title, int width, int height ) {
 
 	glutKeyboardFunc ( _onKeyDown );
 	glutKeyboardUpFunc ( _onKeyUp );
-	glutSpecialFunc ( _onSpecialFunc );
+	glutSpecialUpFunc ( _onSpecialUp );
 	
 	glutMouseFunc ( _onMouseButton );
 	glutMotionFunc ( _onMouseDrag );

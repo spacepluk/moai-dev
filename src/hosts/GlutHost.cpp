@@ -46,6 +46,8 @@
 	#include <FolderWatcher-mac.h>
 #endif
 
+#define SPECIAL_KEY_OFFSET 0xff
+
 namespace GlutInputDeviceID {
 	enum {
 		DEVICE,
@@ -119,10 +121,20 @@ static void _onKeyUp ( unsigned char key, int x, int y ) {
 }
 
 //----------------------------------------------------------------//
-static void _onSpecialFunc ( int key, int x, int y ) {
+static void _onSpecialDown ( int key, int x, int y ) {
 	( void )x;
 	( void )y;
-	
+
+	_updateModifiers ();
+
+	AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key + SPECIAL_KEY_OFFSET, true );
+}
+
+//----------------------------------------------------------------//
+static void _onSpecialUp ( int key, int x, int y ) {
+	( void )x;
+	( void )y;
+
 	_updateModifiers ();
 
 	if ( key == GLUT_KEY_F1 ) {
@@ -136,21 +148,16 @@ static void _onSpecialFunc ( int key, int x, int y ) {
 			AKUDetectGfxContext ();
 		}
 		toggle = !toggle;
-	}
-	
-	if ( key == GLUT_KEY_F2 ) {
+
+	} else if ( key == GLUT_KEY_F2 ) {
 	
 		AKUSoftReleaseGfxResources ( 0 );
-	}
-}
 
-//----------------------------------------------------------------//
-#define SPECIAL_KEY_OFFSET 256
-static void _onSpecialUp ( int key, int x, int y ) {
-	( void )x;
-	( void )y;
+	} else {
 
-	AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key + SPECIAL_KEY_OFFSET, false );
+        AKUEnqueueKeyboardEvent ( GlutInputDeviceID::DEVICE, GlutInputDeviceSensorID::KEYBOARD, key + SPECIAL_KEY_OFFSET, false );
+
+    }
 }
 
 //----------------------------------------------------------------//
@@ -289,6 +296,7 @@ void _AKUOpenWindowFunc ( const char* title, int width, int height ) {
 
 	glutKeyboardFunc ( _onKeyDown );
 	glutKeyboardUpFunc ( _onKeyUp );
+	glutSpecialFunc ( _onSpecialDown );
 	glutSpecialUpFunc ( _onSpecialUp );
 	
 	glutMouseFunc ( _onMouseButton );

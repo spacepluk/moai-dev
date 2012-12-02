@@ -56,6 +56,8 @@ add_library(untz STATIC
 
 target_link_libraries(untz
     ${ALSA_LIBRARIES}
+    pulse
     pulse-simple
     vorbisfile
+    pthread
 )

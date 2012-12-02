@@ -181,4 +181,6 @@ target_link_libraries(uslscore
     ${LUA_LIBRARIES}
     ${ZLIB_LIBRARIES}
     whirlpool
+    crypto
+    rt
 )

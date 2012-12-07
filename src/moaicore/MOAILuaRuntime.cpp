@@ -10,7 +10,7 @@
 #include <moaicore/MOAILuaRef.h>
 #include <moaicore/MOAILuaState-impl.h>
 
-#include <lstate.h>
+#include <lua.h>
 
 #define DUMP_FORMAT "%p <%s> %s"
 
@@ -23,135 +23,15 @@ typedef STLSet < struct Table* > TableSet;
 //----------------------------------------------------------------//
 static void _dumpType ( lua_State* L, int idx, const char *name, bool verbose, TableSet& foundTables ) {
 
-	MOAILuaState state ( L );
+	USLog::Print ( "dumpType\n" );
 
-	const char *format = DUMP_FORMAT;
-
-	idx = state.AbsIndex( idx );
-	StkId tvalue = state->base + idx - 1;
-
-	switch ( lua_type ( state, idx )) {
-
-		case LUA_TBOOLEAN:
-
-			USLog::Print ( format, tvalue, "bool", name );
-			USLog::Print ( " = %s", lua_toboolean ( state, idx ) ? "true" : "false" );
-			break;
-
-		case LUA_TFUNCTION: {
-
-			const char *funcType = iscfunction ( tvalue ) ? "C function" : "Lua function";
-
-			USLog::Print ( format, clvalue ( tvalue ), funcType, name );
-			break;
-		}
-
-		case LUA_TLIGHTUSERDATA:
-
-			USLog::Print ( format, pvalue ( tvalue ), "pointer", name );
-			break;
-
-		case LUA_TNIL:
-
-			USLog::Print ( format, tvalue, "nil", name );
-			break;
-
-		case LUA_TNONE:
-			 // Intentionally do nothing--not even the line break.
-			return;
-
-		case LUA_TNUMBER:
-
-			USLog::Print ( format, tvalue, "number", name );
-			USLog::Print ( " = %f", lua_tonumber ( state, idx ));
-			break;
-
-		case LUA_TSTRING:
-
-			USLog::Print ( format, rawtsvalue( tvalue ), "string", name );
-			USLog::Print ( " = \"%s\"", lua_tostring ( state, idx ));
-			break;
-
-		case LUA_TTABLE: {
-
-			struct Table* htable = hvalue( tvalue );
-
-			if ( foundTables.contains ( htable )) {
-
-				USLog::Print ( DUMP_FORMAT " (see above)", htable, "table", name );
-				break;
-			}
-			else {
-
-				foundTables.insert ( htable );
-
-				USLog::Print ( format, htable, "table", name );
-
-				if ( verbose ) {
-
-					USLog::Print ( "\n" );
-					lua_pushnil ( state );
-
-					while ( lua_next ( state, idx ) ) {
-
-						STLString elementName( name );
-						elementName.append ( "." );
-						elementName.append ( lua_tostring ( state, -2 ));
-						_dumpType ( state, -1, elementName.c_str (), verbose, foundTables );
-						lua_pop ( state, 1 );
-					}
-				}
-			}
-		}
-			return; // suppress newline
-
-		case LUA_TTHREAD:
-
-			USLog::Print ( format, thvalue( tvalue ), "thread", name );
-			break;
-
-		case LUA_TUSERDATA:
-
-			if ( lua_islightuserdata ( state, idx ) ) {
-				
-				USLog::Print ( format, lua_topointer ( state, idx ) , "light userdata", name );
-			}
-			else {
-
-				USLog::Print ( format, lua_topointer( state, idx ), "userdata", name );
-
-				if ( verbose ) {
-
-					lua_getglobal ( state, "tostring" );
-					lua_pushvalue ( state, idx );
-					
-					lua_pcall ( state, 1, 1, 0 );
-
-					USLog::Print ( "\n\t%s", lua_tostring ( state, -1 ));
-					state.Pop ( 1 );
-				}
-			}
-			break;
-
-		default:
-			USLog::Print ( "*** Unexpected type: %d ***", lua_type ( state, idx ));
-	}
-
-	USLog::Print ( "\n" );
 }
 
 //----------------------------------------------------------------//
-static void _dumpTypeByAddress ( lua_State* L, TValue* tvalue, const char *name, bool verbose, TableSet& foundTables ) {
+static void _dumpTypeByAddress ( lua_State* L, void* tvalue, const char *name, bool verbose, TableSet& foundTables ) {
 
-	MOAILuaState state ( L );
-	
-	lua_lock ( L );
-	setobj2s ( L, L->top, tvalue );
-	L->top++;
-	lua_unlock ( L );
+	USLog::Print ( "dumpTypeByAddress\n" );
 
-	_dumpType ( L, -1, name, verbose, foundTables );
-	lua_pop ( L, 1 );
 }
 
 //================================================================//
@@ -246,17 +126,8 @@ static int _dump ( lua_State* L ) {
 //----------------------------------------------------------------//
 static int _dumpStack ( lua_State* L ) {
 
-	MOAILuaState state ( L );
+    USLog::Print ( "dumpstack\n" );
 
-	bool verbose = state.GetValue < bool >( 1, true );
-	int idx = 0;
-
-	TableSet foundTables;
-	for ( TValue* tvalue = state->stack; tvalue < state->top; ++tvalue ) {
-
-		USLog::Print ( "stack [ %d ] ", idx++ );
-		_dumpTypeByAddress ( state, tvalue, "", verbose, foundTables );
-	}
 	return 0;
 }
 
@@ -568,7 +439,7 @@ MOAILuaStateHandle MOAILuaRuntime::Open () {
 	}
 
 	// open the main state
-	this->mMainState = lua_newstate ( _tracking_alloc, NULL );
+	this->mMainState = luaL_newstate ();
 	lua_atpanic ( this->mMainState, &_panic );
 
 	// set up the ref tables

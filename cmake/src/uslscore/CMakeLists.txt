@@ -178,9 +178,10 @@ add_library(uslscore STATIC
 )
 
 target_link_libraries(uslscore
-    ${LUA_LIBRARIES}
+    #${LUA_LIBRARIES}
     ${ZLIB_LIBRARIES}
     whirlpool
     crypto
     rt
+    luajit-5.1
 )

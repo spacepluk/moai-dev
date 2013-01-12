@@ -22,6 +22,6 @@ Then create a directory to contain the build.  And start compilation:
 
     mkdir build
     cd build
-    cmake ..
+    cmake ../cmake/
     make -j4
 

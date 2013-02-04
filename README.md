@@ -8,7 +8,7 @@ System dependencies
 Before you build the package you'll need to install the following dependencies
 on your system:
 
-    sudo aptitude install freeglut3-dev libglew-dev libglu1-mesa-dev libxmu-dev libxi-dev chipmunk-dev libjpeg8-dev libpng-dev libfreetype6-dev liblua5.1-0-dev libjansson-dev libtinyxml-dev libcurl4-openssl-dev zlib1g-dev libexpat1-dev cmake build-essential libasound2-dev libvorbis-dev libpulse-dev
+    sudo aptitude install freeglut3-dev libglew-dev libglu1-mesa-dev libxmu-dev libxi-dev chipmunk-dev libjpeg8-dev libpng-dev libfreetype6-dev liblua5.1-0-dev libjansson-dev libtinyxml-dev libcurl4-openssl-dev zlib1g-dev libexpat1-dev cmake build-essential libasound2-dev libvorbis-dev libpulse-dev libasound2-dev
 
 
 Building Moai

@@ -25,3 +25,5 @@ Then create a directory to contain the build.  And start compilation:
     cmake ../cmake/
     make -j4
 
+You'll find the binary in `build/src/hosts/moai-untz`
+

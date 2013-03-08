@@ -8,6 +8,7 @@ set(hosts_lib_list
     moaicore
     utf8
     jansson
+    sfmt-1.4
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     GLEW

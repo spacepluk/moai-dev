@@ -4,5 +4,6 @@ add_subdirectory("${MOAI_SOURCE_DIR}/3rdparty/box2d-2.2.1" box2d-2.2.1)
 
 add_subdirectory(contrib)
 add_subdirectory(tlsf-2.0)
+add_subdirectory(sfmt-1.4)
 
 add_subdirectory(untz)

@@ -15,6 +15,7 @@ include_directories(
     "${MOAI_SOURCE_DIR}/3rdparty/lua-5.1.3/src"
     "${MOAI_SOURCE_DIR}/3rdparty/ooid-0.99"
     "${MOAI_SOURCE_DIR}/3rdparty/tlsf-2.0"
+    "${MOAI_SOURCE_DIR}/3rdparty/sfmt-1.4"
     "${MOAI_SOURCE_DIR}/3rdparty/untz/include"
     "${MOAI_SOURCE_DIR}/src"
     "${MOAI_SOURCE_DIR}/src/config-default"
